@@ -1,14 +1,23 @@
 const express = require("express");
 const axios = require("axios");
 const cors = require("cors");
+const OpenAI = require("openai");
+const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
+
+// Initialize OpenAI
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 // Helper function to get date in YYYY-MM-DD format
 const getDateString = (date) => {
@@ -26,7 +35,7 @@ const getPastHourRange = () => {
     // For API calls - be conservative and ensure we capture all possible data
     // Since restrict_begin/end are date-only (start at 00:00), we need full day coverage
     // Use the day before oneHourAgo to ensure we don't miss any data
-    startDate: new Date(oneHourAgo.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    startDate: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     endDate: now.toISOString().split("T")[0],
   };
 };
@@ -165,6 +174,161 @@ app.get("/api/activity/past-hour", async (req, res) => {
   }
 });
 
+// Endpoint to generate image based on top activities
+app.post("/api/generate-image", async (req, res) => {
+  try {
+    // Validate OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(500).json({
+        error: "OpenAI API key not configured. Please set OPENAI_API_KEY in your .env file.",
+      });
+    }
+
+    // Fetch activity data from the past hour
+    const activityResponse = await axios.get(`http://localhost:${PORT}/api/activity/past-hour`);
+
+    if (!activityResponse.data.success) {
+      return res.status(500).json({
+        error: "Failed to fetch activity data",
+        message: activityResponse.data.error || "Unknown error",
+      });
+    }
+
+    const activities = activityResponse.data.activities;
+
+    // Get top 4 activities
+    const top4Activities = activities.slice(0, 4);
+
+    if (top4Activities.length === 0) {
+      return res.status(400).json({
+        error: "No activities found in the past hour",
+        message: "Please try again when you have some activity data.",
+      });
+    }
+
+    // Format activities for the prompt
+    const activityDescriptions = top4Activities
+      .map((activity, index) => {
+        return `${index + 1}. ${activity.activity} (${activity.category}) - ${
+          activity.totalTimeMinutes
+        } minutes`;
+      })
+      .join("\n");
+
+    const prompt = `Given a list of my highest screen time activities, give me a prompt for a portrait that represents an activity. You can choose one of the activities provided, preferably the first one, which has the most screen time, but choose whichever you can come up with the most vivid and interesting painting for.
+
+Also, based on the activity, its category, and its productivity level, describe the overall mood of the painting as something light, vibrant, and sunny or dark, depressed, or sinister. Examples of productive activities are coding, reading, learning, working, and writing. Examples of unproductive activities are shopping, browsing social media, and watching videos.
+
+Here are some examples of the activities and their prompts:
+
+Activity/Activities: "nytimes.com" (News)
+Prompt: "Show this person in a chair reading the newspaper, drinking tea, in an oil painting style with lots of light."
+
+Activity/Activities: "aritzia.com" (General Shopping), "nordstrom.com" (General Shopping), "amazon.com" (General Shopping)
+Prompt: "Show this person with lots of shopping bags and money being spent everywhere, dark oil painting style."
+
+Activity/Activities: "Cursor (Editing & IDEs), Github.com (General Software Development)"
+Prompt: "Show this person typing at their computer, thinking hard, with the green github grid as the background. oil painting style, light and sunny."
+
+Activity/Activities: "x.com" (Social Media)
+Prompt: "Show this person scrolling through social media on their phone, surrounded by notifications and distractions, in a dark moody style."
+
+My activities: ${activityDescriptions}
+
+Please provide only the prompt for the image generation, nothing else.`;
+    const prompt_response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+    });
+
+    const image_prompt = prompt_response.choices[0].message.content;
+
+    console.log("Prompt:", image_prompt);
+
+    //     // Create a prompt for image generation
+    //     const prompt = `Create a creative and artistic visualization representing a person's digital activity from the past hour. The top activities were:
+
+    // ${activityDescriptions}
+
+    // Create an abstract, colorful, and engaging image that represents this digital workflow and productivity. Use modern, clean design elements with vibrant colors. The image should feel inspiring and represent the balance of different digital activities.`;
+
+    // console.log("Generating image with prompt:", prompt);
+
+    // Read and encode the reference image
+    const imagePath = path.join(__dirname, "data", "IMG_3814.jpg");
+    const imageBuffer = fs.readFileSync(imagePath);
+    const imageBase64Reference = imageBuffer.toString("base64");
+
+    // Generate image using OpenAI GPT-4.1 with responses API
+    const response = await openai.responses.create({
+      model: "gpt-5",
+      input: [
+        {
+          role: "user",
+          content: [
+            { type: "input_text", text: image_prompt },
+            {
+              type: "input_image",
+              image_url: `data:image/jpeg;base64,${imageBase64Reference}`,
+            },
+          ],
+        },
+      ],
+      tools: [{ type: "image_generation" }],
+    });
+
+    const imageData = response.output
+      .filter((output) => output.type === "image_generation_call")
+      .map((output) => output.result);
+
+    if (!imageData || imageData.length === 0) {
+      throw new Error("No image data returned from OpenAI");
+    }
+
+    // Convert base64 to data URL for frontend display
+    const imageBase64 = imageData[0];
+    const imageUrl = `data:image/png;base64,${imageBase64}`;
+
+    // Return success response
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      activities: top4Activities,
+      prompt: image_prompt,
+      timeRange: activityResponse.data.timeRange,
+      summary: activityResponse.data.summary,
+    });
+  } catch (error) {
+    console.error("Error generating image:", error.message);
+
+    if (error.response) {
+      // API responded with error status
+      res.status(error.response.status).json({
+        error: "API error",
+        message: error.response.data?.error?.message || error.message,
+        status: error.response.status,
+      });
+    } else if (error.request) {
+      // Network error
+      res.status(503).json({
+        error: "Network error",
+        message: "Unable to reach the API. Please check your connection and try again.",
+      });
+    } else {
+      // Other error
+      res.status(500).json({
+        error: "Internal server error",
+        message: error.message,
+      });
+    }
+  }
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
@@ -181,6 +345,7 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: {
       "/api/activity/past-hour": "GET - Fetch activity data from the past hour",
+      "/api/generate-image": "POST - Generate image based on top 4 activities from past hour",
       "/health": "GET - Health check",
     },
     documentation: {
