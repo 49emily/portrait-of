@@ -200,9 +200,9 @@ app.post("/api/generate-image", async (req, res) => {
     // Format activities for the prompt
     const activityDescriptions = top4Activities
       .map((activity, index) => {
-        return `${index + 1}. ${activity.activity} (${activity.category}) - ${
-          activity.totalTimeMinutes
-        } minutes`;
+        return `${index + 1}. ${activity.activity} (${activity.category})\n
+         ${activity.productivity} productivity\n
+         ${activity.totalTimeMinutes} minutes`;
       })
       .join("\n");
 
@@ -210,7 +210,9 @@ app.post("/api/generate-image", async (req, res) => {
 
 Also, based on the activity, its category, and its productivity level, describe the overall mood of the painting as something light, vibrant, and sunny or dark, depressed, or sinister. Examples of productive activities are coding, reading, learning, working, and writing. Examples of unproductive activities are shopping, browsing social media, and watching videos.
 
-Here are some examples of the activities and their prompts:
+Try to come up with subjective representations of the activities, without necessarily mentioning a computer. For example, music software is better represented as a person with a guitar or piano, rather than a person at a computer. News websites are better represented as a person reading the newspaper. With examples like coding or social media that cannot be separated from technology, you can represent as a person using a phone or computer.
+
+Here are some more examples of the activities and their prompts:
 
 Activity/Activities: "nytimes.com" (News)
 Prompt: "Show this person in a chair reading the newspaper, drinking tea, in an oil painting style with lots of light."
@@ -222,11 +224,14 @@ Activity/Activities: "Cursor (Editing & IDEs), Github.com (General Software Deve
 Prompt: "Show this person typing at their computer, thinking hard, with the green github grid as the background. oil painting style, light and sunny."
 
 Activity/Activities: "x.com" (Social Media)
-Prompt: "Show this person scrolling through social media on their phone, surrounded by notifications and distractions, in a dark moody style."
+Prompt: "Show this person scrolling through social media on their phone, surrounded by notifications and distractions, in a dark moody oil painting style."
 
 My activities: ${activityDescriptions}
 
 Please provide only the prompt for the image generation, nothing else.`;
+
+    console.log("Prompt:", prompt);
+
     const prompt_response = await openai.chat.completions.create({
       model: "gpt-4o",
       messages: [
@@ -239,7 +244,7 @@ Please provide only the prompt for the image generation, nothing else.`;
 
     const image_prompt = prompt_response.choices[0].message.content;
 
-    console.log("Prompt:", image_prompt);
+    console.log("Image Prompt:", image_prompt);
 
     //     // Create a prompt for image generation
     //     const prompt = `Create a creative and artistic visualization representing a person's digital activity from the past hour. The top activities were:
@@ -251,7 +256,7 @@ Please provide only the prompt for the image generation, nothing else.`;
     // console.log("Generating image with prompt:", prompt);
 
     // Read and encode the reference image
-    const imagePath = path.join(__dirname, "data", "emily2.jpg");
+    const imagePath = path.join(__dirname, "data", "emily.jpg");
     const imageBuffer = fs.readFileSync(imagePath);
     const imageBase64Reference = imageBuffer.toString("base64");
 
