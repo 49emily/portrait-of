@@ -184,27 +184,18 @@ app.post("/api/generate-image", async (req, res) => {
       });
     }
 
-    // Fetch activity data from the past hour
-    const activityResponse = await axios.get(`http://localhost:${PORT}/api/activity/past-hour`);
+    // Get activities from request body
+    const { activities } = req.body;
 
-    if (!activityResponse.data.success) {
-      return res.status(500).json({
-        error: "Failed to fetch activity data",
-        message: activityResponse.data.error || "Unknown error",
+    if (!activities || !Array.isArray(activities) || activities.length === 0) {
+      return res.status(400).json({
+        error: "No activities provided",
+        message: "Please provide an array of activities in the request body.",
       });
     }
-
-    const activities = activityResponse.data.activities;
 
     // Get top 4 activities
     const top4Activities = activities.slice(0, 4);
-
-    if (top4Activities.length === 0) {
-      return res.status(400).json({
-        error: "No activities found in the past hour",
-        message: "Please try again when you have some activity data.",
-      });
-    }
 
     // Format activities for the prompt
     const activityDescriptions = top4Activities
@@ -260,7 +251,7 @@ Please provide only the prompt for the image generation, nothing else.`;
     // console.log("Generating image with prompt:", prompt);
 
     // Read and encode the reference image
-    const imagePath = path.join(__dirname, "data", "IMG_3814.jpg");
+    const imagePath = path.join(__dirname, "data", "emily2.jpg");
     const imageBuffer = fs.readFileSync(imagePath);
     const imageBase64Reference = imageBuffer.toString("base64");
 
@@ -300,8 +291,6 @@ Please provide only the prompt for the image generation, nothing else.`;
       imageUrl: imageUrl,
       activities: top4Activities,
       prompt: image_prompt,
-      timeRange: activityResponse.data.timeRange,
-      summary: activityResponse.data.summary,
     });
   } catch (error) {
     console.error("Error generating image:", error.message);

@@ -2,16 +2,61 @@ import { useState } from "react";
 import "./App.css";
 
 function App() {
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isFetchingActivities, setIsFetchingActivities] = useState(false);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [generatedImage, setGeneratedImage] = useState(null);
   const [activities, setActivities] = useState([]);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState(null);
+  const [summary, setSummary] = useState(null);
 
-  const handleStartGeneration = async () => {
-    setIsGenerating(true);
+  const handleFetchActivities = async () => {
+    setIsFetchingActivities(true);
     setError(null);
+    setActivities([]);
     setGeneratedImage(null);
+
+    try {
+      const response = await fetch("http://localhost:3000/api/activity/past-hour");
+      const data = await response.json();
+
+      if (data.success) {
+        // setActivities(data.activities);
+        //todo: change for testing only
+        setActivities([
+          {
+            activity: "Obsidian",
+            category: "Writing Software",
+            totalTimeMinutes: 10,
+            productivity: 1,
+          },
+          {
+            activity: "Notion",
+            category: "Writing Software",
+            totalTimeMinutes: 10,
+            productivity: 1,
+          },
+        ]);
+        setTimeRange(data.timeRange);
+        setSummary(data.summary);
+      } else {
+        setError(data.error || "Failed to fetch activities");
+      }
+    } catch (err) {
+      setError("Network error: " + err.message);
+    } finally {
+      setIsFetchingActivities(false);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (activities.length === 0) {
+      setError("No activities to generate image from");
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    setError(null);
 
     try {
       const response = await fetch("http://localhost:3000/api/generate-image", {
@@ -19,21 +64,20 @@ function App() {
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ activities }),
       });
 
       const data = await response.json();
 
       if (data.success) {
         setGeneratedImage(data.imageUrl);
-        setActivities(data.activities);
-        setTimeRange(data.timeRange);
       } else {
         setError(data.error || "Failed to generate image");
       }
     } catch (err) {
       setError("Network error: " + err.message);
     } finally {
-      setIsGenerating(false);
+      setIsGeneratingImage(false);
     }
   };
 
@@ -47,13 +91,25 @@ function App() {
 
         <main className="flex justify-center">
           <div className="w-full max-w-2xl">
-            <button
-              onClick={handleStartGeneration}
-              disabled={isGenerating}
-              className="block mx-auto mb-12 py-4 px-8 text-lg font-semibold rounded-lg disabled:opacity-50 bg-gray-100 hover:bg-gray-200"
-            >
-              {isGenerating ? "Generating..." : "Start Generation"}
-            </button>
+            <div className="flex flex-col items-center space-y-4 mb-12">
+              <button
+                onClick={handleFetchActivities}
+                disabled={isFetchingActivities}
+                className="py-4 px-8 text-lg font-semibold rounded-lg disabled:opacity-50 bg-gray-100 hover:bg-gray-200"
+              >
+                {isFetchingActivities ? "📊 Fetching Activities..." : "📊 Fetch Activities"}
+              </button>
+
+              {activities.length > 0 && (
+                <button
+                  onClick={handleGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="py-4 px-8 text-lg font-semibold rounded-lg disabled:opacity-50 bg-gray-100 hover:bg-gray-200"
+                >
+                  {isGeneratingImage ? "🎨 Generating Image..." : "🎨 Generate Image"}
+                </button>
+              )}
+            </div>
 
             {error && (
               <div className="p-4 mb-12 text-center">
@@ -62,11 +118,15 @@ function App() {
               </div>
             )}
 
-            {timeRange && (
+            {timeRange && summary && (
               <div className="text-center mb-12 p-4">
-                <p>
+                <p className="mb-2">
                   <strong>Time Range:</strong> {new Date(timeRange.from).toLocaleTimeString()} -{" "}
                   {new Date(timeRange.to).toLocaleTimeString()}
+                </p>
+                <p>
+                  <strong>Total Time:</strong> {summary.totalTimeMinutes} minutes |{" "}
+                  <strong>Activities:</strong> {summary.totalActivities}
                 </p>
               </div>
             )}
