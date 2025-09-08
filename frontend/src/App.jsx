@@ -17,26 +17,26 @@ function App() {
     setGeneratedImage(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/activity/past-hour");
+      const response = await fetch("http://localhost:3000/activity/past-hour");
       const data = await response.json();
 
       if (data.success) {
-        // setActivities(data.activities);
+        setActivities(data.activities);
         //todo: change for testing only
-        setActivities([
-          {
-            activity: "Obsidian",
-            category: "Writing Software",
-            totalTimeMinutes: 10,
-            productivity: 1,
-          },
-          {
-            activity: "Notion",
-            category: "Writing Software",
-            totalTimeMinutes: 10,
-            productivity: 1,
-          },
-        ]);
+        // setActivities([
+        //   {
+        //     activity: "Kalshi.com",
+        //     category: "Financial Services and Betting",
+        //     totalTimeMinutes: 10,
+        //     productivity: -1,
+        //   },
+        //   {
+        //     activity: "Notion",
+        //     category: "Writing Software",
+        //     totalTimeMinutes: 1,
+        //     productivity: 1,
+        //   },
+        // ]);
         setTimeRange(data.timeRange);
         setSummary(data.summary);
       } else {
@@ -59,7 +59,7 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch("http://localhost:3000/api/generate-image", {
+      const response = await fetch("http://localhost:3000/generate/generate-image", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
