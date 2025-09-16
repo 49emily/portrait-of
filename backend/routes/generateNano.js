@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
+import axios from "axios"; 
 
 /* ---------- Paths ---------- */
 const __filename = fileURLToPath(import.meta.url);
@@ -21,7 +22,47 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const FIRST_RUN_PROMPT =
   "Render this photograph as a realistic oil portrait in a golden frame like a painting in an art museum exhibit. Preserve the subject's exact likeness and the original composition of the photo.";
 
+  // --- NEW RESCUETIME CONFIG ---
+const GATING_ENABLED = true; // toggle for rescuetime productivty gate
+const UNPRODUCTIVE_THRESHOLD_MINUTES = 5; // Trigger if unproductive time is >= 10 minutes
+const ACTIVITY_CHECK_WINDOW_MS = 60 * 60 * 1000; // first number is minutes, change to whatever
+
 /* ---------- Utils ---------- */
+
+async function fetchRescueTimeData(startTime, endTime) {
+  if (!process.env.RESCUETIME_API_KEY) {
+    throw new Error("RESCUETIME_API_KEY missing in backend/.env");
+  }
+
+  const params = {
+    key: process.env.RESCUETIME_API_KEY,
+    perspective: "interval",
+    resolution_time: "minute",
+    restrict_begin: startTime.toISOString(),
+    restrict_end: endTime.toISOString(),
+    restrict_kind: "activity",
+    format: "json",
+  };
+
+  try {
+    const response = await axios.get("https://www.rescuetime.com/anapi/data", { params });
+    return response.data.rows || [];
+  } catch (error) {
+    console.error("❌ RescueTime API Error:", error.response?.data || error.message);
+    return []; // Return empty array on error to prevent crashing
+  }
+}
+
+// prunes the full data to just the unproductive minutes
+// potentially rework / remove if we want more rich data in the future
+function calculateUnproductiveMinutes(rows) {
+  const unproductiveSeconds = rows
+    .filter(row => row[5] < 0) // row[5] is the productivity score
+    .reduce((total, row) => total + (row[1] || 0), 0); // row[1] is time in seconds
+
+  return unproductiveSeconds / 60;
+}
+
 function ensureDirs() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 }
@@ -106,6 +147,28 @@ function extractFirstImageAndSave(res, outPath) {
 async function main() {
   const t0 = Date.now();
   console.log("——— generateNano: start run ——─");
+
+  if (GATING_ENABLED) {
+    // --- NEW: PRODUCTIVITY GATE ---
+    console.log("Checking productivity gate...");
+    const now = new Date();
+    const checkStartTime = new Date(now.getTime() - ACTIVITY_CHECK_WINDOW_MS);
+    const rows = await fetchRescueTimeData(checkStartTime, now);
+
+    console.log("Raw data from RescueTime API:", rows);
+    const unproductiveMinutes = calculateUnproductiveMinutes(rows);
+    
+    console.log(`[gate] Unproductive time in last hour: ${unproductiveMinutes.toFixed(2)} minutes.`);
+  
+    if (unproductiveMinutes < UNPRODUCTIVE_THRESHOLD_MINUTES) {
+      console.log(`[gate] Threshold of ${UNPRODUCTIVE_THRESHOLD_MINUTES} minutes not met. Skipping image generation.`);
+      console.log("——— generateNano: end run (skipped) ——─\n");
+      return; // Exit the function early
+    }
+    
+    console.log(`[gate] ✅ Threshold met. Proceeding with image generation.`);
+    // --- END: PRODUCTIVITY GATE ---
+  }
 
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY missing in backend/.env");
