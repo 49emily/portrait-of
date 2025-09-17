@@ -1,0 +1,9 @@
+/* App.css - using Tailwind instead */
+@import "tailwindcss";
+
+/* Global styles that can't be easily replaced with Tailwind utilities */
+body {
+  background-color: #1a1a1a;
+  color: #f0f0f0;
+  font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}

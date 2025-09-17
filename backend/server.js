@@ -1,214 +1,149 @@
-const express = require("express");
-const axios = require("axios");
-const cors = require("cors");
-require("dotenv").config();
+// server.js
+
+// Load environment variables first
+import "./config.js";
+
+import express from "express";
+import cors from "cors";
+import path from "path";
+import fs from "node:fs"; // <-- Add fs
+import { fileURLToPath } from "url";
+import { getAllPortraitHistory } from "./controllers/supabase.js";
+import axios from "axios";
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-// Middleware
+// --- Directories ---
+
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
 
-// Helper function to get date in YYYY-MM-DD format
-const getDateString = (date) => {
-  return date.toISOString().split("T")[0];
-};
+// --- Helper Functions ---
 
-// Helper function to get time range for the past hour
-const getPastHourRange = () => {
+// Get midnight of current day
+function getTodayMidnight() {
   const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000); // Exactly 1 hour ago
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
 
-  return {
-    start: oneHourAgo,
-    end: now,
-    // For API calls - be conservative and ensure we capture all possible data
-    // Since restrict_begin/end are date-only (start at 00:00), we need full day coverage
-    // Use the day before oneHourAgo to ensure we don't miss any data
-    startDate: new Date(oneHourAgo.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    endDate: now.toISOString().split("T")[0],
+// Fetch RescueTime data (copied from generateNano.js)
+async function fetchRescueTimeData(startTime, endTime) {
+  if (!process.env.RESCUETIME_API_KEY) {
+    throw new Error("RESCUETIME_API_KEY missing in .env");
+  }
+
+  // Set restrict_begin/end to full days to ensure we capture all possible data
+  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const endDate = endTime.toISOString().split("T")[0];
+
+  const params = {
+    key: process.env.RESCUETIME_API_KEY,
+    perspective: "interval",
+    resolution_time: "minute",
+    restrict_begin: startDate,
+    restrict_end: endDate,
+    restrict_kind: "activity",
+    format: "json",
   };
-};
 
-// Endpoint to fetch activity data from the past hour
-app.get("/api/activity/past-hour", async (req, res) => {
   try {
-    // Validate API key
-    if (!process.env.RESCUETIME_API_KEY) {
-      return res.status(500).json({
-        error:
-          "RescueTime API key not configured. Please set RESCUETIME_API_KEY in your .env file.",
-      });
-    }
-
-    // Get time range for the past hour
-    const timeRange = getPastHourRange();
-
-    // RescueTime API parameters - optimized for minimal data transfer
-    // Note: RescueTime API only supports date-level filtering, not hour-level
-    // So we request the minimal date range and filter precisely on our end
-    const params = {
-      key: process.env.RESCUETIME_API_KEY,
-      perspective: "interval",
-      resolution_time: "minute", // 5-minute buckets for precise time filtering
-      restrict_begin: timeRange.startDate,
-      restrict_end: timeRange.endDate,
-      restrict_kind: "activity", // Individual activities (most detailed level)
-      format: "json",
-    };
-
-    // Make request to RescueTime API
     const response = await axios.get("https://www.rescuetime.com/anapi/data", { params });
+    const allRows = response.data.rows || [];
 
-    if (response.status !== 200) {
-      throw new Error(`RescueTime API returned status ${response.status}`);
-    }
-
-    const data = response.data;
-
-    // Filter data to only include the past hour
-    // RescueTime returns data with timestamps, we need to filter for the exact past hour
-    let filteredRows = [];
-
-    if (data.rows && Array.isArray(data.rows)) {
-      filteredRows = data.rows.filter((row) => {
-        // Row structure: [Date, Time Spent (seconds), Number of People, Activity, Category, Productivity]
-        // The first element is the timestamp in format "2024-01-01 14:05:00"
-        const timestamp = new Date(row[0]);
-        return timestamp >= timeRange.start && timestamp <= timeRange.end;
-      });
-    }
-
-    // Calculate total time for the past hour
-    const totalTimeSeconds = filteredRows.reduce((total, row) => {
-      return total + (row[1] || 0); // row[1] is time spent in seconds
-    }, 0);
-
-    // Group activities by name and sum their time
-    const activitySummary = {};
-    filteredRows.forEach((row) => {
-      const activity = row[3] || "Unknown"; // row[3] is activity name
-      const timeSpent = row[1] || 0; // row[1] is time spent in seconds
-      const category = row[4] || "Unknown"; // row[4] is category
-      const productivity = row[5] || 0; // row[5] is productivity score
-
-      if (!activitySummary[activity]) {
-        activitySummary[activity] = {
-          activity,
-          category,
-          totalTimeSeconds: 0,
-          totalTimeMinutes: 0,
-          productivity,
-          occurrences: 0,
-        };
-      }
-
-      activitySummary[activity].totalTimeSeconds += timeSpent;
-      activitySummary[activity].totalTimeMinutes = Math.round(
-        activitySummary[activity].totalTimeSeconds / 60
-      );
-      activitySummary[activity].occurrences += 1;
+    // Filter data to only include the specified time range
+    const filteredRows = allRows.filter((row) => {
+      const timestamp = new Date(row[0]);
+      return timestamp >= startTime && timestamp <= endTime;
     });
 
-    // Convert to array and sort by time spent
-    const sortedActivities = Object.values(activitySummary).sort(
-      (a, b) => b.totalTimeSeconds - a.totalTimeSeconds
-    );
-
-    // Prepare response
-    const result = {
-      success: true,
-      timeRange: {
-        from: timeRange.start.toISOString(),
-        to: timeRange.end.toISOString(),
-        description: "Past hour activity data",
-      },
-      summary: {
-        totalTimeSeconds,
-        totalTimeMinutes: Math.round(totalTimeSeconds / 60),
-        totalActivities: sortedActivities.length,
-        dataPoints: filteredRows.length,
-      },
-      activities: sortedActivities,
-      rawData: {
-        notes: data.notes,
-        row_headers: data.row_headers,
-        filtered_rows: filteredRows,
-      },
-    };
-
-    res.json(result);
+    return filteredRows;
   } catch (error) {
-    console.error("Error fetching RescueTime data:", error.message);
+    console.error("❌ RescueTime API Error:", error.response?.data || error.message);
+    return [];
+  }
+}
 
-    if (error.response) {
-      // API responded with error status
-      res.status(error.response.status).json({
-        error: "RescueTime API error",
-        message: error.response.data || error.message,
-        status: error.response.status,
-      });
-    } else if (error.request) {
-      // Network error
-      res.status(503).json({
-        error: "Unable to reach RescueTime API",
-        message: "Please check your internet connection and try again",
-      });
-    } else {
-      // Other error
-      res.status(500).json({
-        error: "Internal server error",
-        message: error.message,
-      });
-    }
+// Calculate unproductive minutes
+function calculateUnproductiveMinutes(rows) {
+  const unproductiveSeconds = rows
+    .filter((row) => row[5] < 0) // row[5] is the productivity score
+    .reduce((total, row) => total + (row[1] || 0), 0); // row[1] is time in seconds
+
+  return unproductiveSeconds / 60;
+}
+
+// --- API Routes ---
+
+// Health check endpoint (this is good to keep)
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
+});
+
+// The NEW endpoint for our frontend viewer - now using Supabase
+app.get("/api/portrait-history", async (req, res) => {
+  try {
+    const history = await getAllPortraitHistory();
+    res.json({ success: true, history }); // Already ordered newest first
+  } catch (error) {
+    console.error("Error fetching portrait history from Supabase:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch portrait history from Supabase.",
+      message: error.message,
+    });
   }
 });
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    service: "Dorian RescueTime Backend",
-  });
+// New endpoint to get current unproductive screentime for progress bar
+app.get("/api/current-screentime", async (req, res) => {
+  try {
+    const now = new Date();
+    const todayMidnight = getTodayMidnight();
+    const rows = await fetchRescueTimeData(todayMidnight, now);
+    const unproductiveMinutes = calculateUnproductiveMinutes(rows);
+
+    // Calculate how many images should have been generated
+    const expectedImageCount = Math.floor(unproductiveMinutes / 30) + 1;
+
+    res.json({
+      success: true,
+      unproductiveMinutes: Math.round(unproductiveMinutes * 100) / 100, // Round to 2 decimal places
+      expectedImageCount,
+      nextThreshold: expectedImageCount * 30,
+      timestamp: now.toISOString(),
+    });
+  } catch (error) {
+    console.error("Error fetching current screentime:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch current screentime.",
+      message: error.message,
+    });
+  }
 });
 
-// Root endpoint with API information
+// Root endpoint with updated API information
 app.get("/", (req, res) => {
   res.json({
-    message: "Dorian RescueTime Backend API",
-    version: "1.0.0",
+    message: "Dorian Portrait Viewer API",
+    version: "2.0.0",
     endpoints: {
-      "/api/activity/past-hour": "GET - Fetch activity data from the past hour",
+      "/api/portrait-history": "GET - Fetch the entire history of portrait generations.",
+      "/api/current-screentime": "GET - Get current unproductive screentime for today.",
       "/health": "GET - Health check",
-    },
-    documentation: {
-      pastHour: {
-        description: "Returns detailed activity data for the past hour",
-        response: {
-          timeRange: "Object with from/to timestamps",
-          summary: "Aggregated statistics",
-          activities: "Array of activities sorted by time spent",
-          rawData: "Original RescueTime API response data",
-        },
-      },
     },
   });
 });
 
-// Start server
+// --- Start Server ---
 app.listen(PORT, () => {
-  console.log(`🚀 Dorian RescueTime Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`⏰ Past hour data: http://localhost:${PORT}/api/activity/past-hour`);
-
-  if (!process.env.RESCUETIME_API_KEY) {
-    console.warn("⚠️  Warning: RESCUETIME_API_KEY not set in environment variables");
-    console.log(
-      "📝 Please create a .env file based on env.template and add your RescueTime API key"
-    );
-  }
+  console.log(`🚀 API Server (the "Waiter") running on port ${PORT}`);
 });
 
-module.exports = app;
+export default app;
