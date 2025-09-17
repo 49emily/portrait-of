@@ -142,7 +142,7 @@ router.post("/generate-image", async (req, res) => {
     const imageBase64 = imageData[0];
     const imageUrl = `data:image/png;base64,${imageBase64}`;
 
-    const data = await uploadImageToSupabase(imageUrl, 1, image_prompt);
+    const data = await uploadImageToSupabase(imageBase64, 1, image_prompt);
     // Return success response
     res.json({
       success: true,

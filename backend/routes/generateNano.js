@@ -3,16 +3,19 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
-import axios from "axios"; 
+import axios from "axios";
+import {
+  uploadImageToSupabase,
+  getTodayImageCount,
+  getLatestImageToday,
+} from "../controllers/supabase.js";
 
 /* ---------- Paths ---------- */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const BACKEND_DIR = path.join(__dirname, "..");
 const IMAGES_DIR = path.join(BACKEND_DIR, "images");
-const OUT_DIR = path.join(BACKEND_DIR, "out");
 const PROMPTS_PATH = path.join(BACKEND_DIR, "prompts.json");
-const MANIFEST_PATH = path.join(OUT_DIR, "manifest.json");
 
 /* ---------- Config ---------- */
 const MODEL = "gemini-2.5-flash-image-preview";
@@ -22,31 +25,54 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const FIRST_RUN_PROMPT =
   "Render this photograph as a realistic oil portrait in a golden frame like a painting in an art museum exhibit. Preserve the subject's exact likeness and the original composition of the photo.";
 
-  // --- NEW RESCUETIME CONFIG ---
-const GATING_ENABLED = false; // toggle for rescuetime productivty gate
-const UNPRODUCTIVE_THRESHOLD_MINUTES = 5; // Trigger if unproductive time is >= 10 minutes
-const ACTIVITY_CHECK_WINDOW_MS = 60 * 60 * 1000; // first number is minutes, change to whatever
+const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30; // Generate image every 30 minutes of unproductive time
 
 /* ---------- Utils ---------- */
+
+// Get midnight of current day
+function getTodayMidnight() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+// Get count of images generated today from Supabase
+async function getTodayImageCountLocal() {
+  return await getTodayImageCount();
+}
 
 async function fetchRescueTimeData(startTime, endTime) {
   if (!process.env.RESCUETIME_API_KEY) {
     throw new Error("RESCUETIME_API_KEY missing in backend/.env");
   }
 
+  // Set restrict_begin/end to full days to ensure we capture all possible data
+  // Then filter the response array by the actual startTime and endTime
+  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const endDate = endTime.toISOString().split("T")[0];
+
   const params = {
     key: process.env.RESCUETIME_API_KEY,
     perspective: "interval",
     resolution_time: "minute",
-    restrict_begin: startTime.toISOString(),
-    restrict_end: endTime.toISOString(),
+    restrict_begin: startDate,
+    restrict_end: endDate,
     restrict_kind: "activity",
     format: "json",
   };
 
   try {
     const response = await axios.get("https://www.rescuetime.com/anapi/data", { params });
-    return response.data.rows || [];
+    const allRows = response.data.rows || [];
+
+    // Filter data to only include the specified time range
+    const filteredRows = allRows.filter((row) => {
+      // Row structure: [Date, Time Spent (seconds), Number of People, Activity, Category, Productivity]
+      // The first element is the timestamp in format "2024-01-01 14:05:00"
+      const timestamp = new Date(row[0]);
+      return timestamp >= startTime && timestamp <= endTime;
+    });
+
+    return filteredRows;
   } catch (error) {
     console.error("❌ RescueTime API Error:", error.response?.data || error.message);
     return []; // Return empty array on error to prevent crashing
@@ -57,14 +83,10 @@ async function fetchRescueTimeData(startTime, endTime) {
 // potentially rework / remove if we want more rich data in the future
 function calculateUnproductiveMinutes(rows) {
   const unproductiveSeconds = rows
-    .filter(row => row[5] < 0) // row[5] is the productivity score
+    .filter((row) => row[5] < 0) // row[5] is the productivity score
     .reduce((total, row) => total + (row[1] || 0), 0); // row[1] is time in seconds
 
   return unproductiveSeconds / 60;
-}
-
-function ensureDirs() {
-  fs.mkdirSync(OUT_DIR, { recursive: true });
 }
 
 function loadPromptsFlat() {
@@ -77,40 +99,8 @@ function loadPromptsFlat() {
   return flat;
 }
 
-function loadManifest() {
-  if (!fs.existsSync(MANIFEST_PATH)) return { runs: [] };
-  return JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf-8"));
-}
-
-function saveManifest(m) {
-  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(m, null, 2));
-}
-
-function nextVersion(manifest) {
-  return (manifest.runs?.length || 0) + 1;
-}
-
-function versionFilename(idx, ext = "png") {
-  return `dorian_v${String(idx).padStart(3, "0")}.${ext}`;
-}
-
-function latestOutputPath() {
-  if (!fs.existsSync(OUT_DIR)) return null;
-  const files = fs
-    .readdirSync(OUT_DIR)
-    .filter((f) => /^dorian_v\d{3}\.(png|jpe?g)$/i.test(f))
-    .sort();
-  return files.length ? path.join(OUT_DIR, files[files.length - 1]) : null;
-}
-
 function readImageAsBase64(p) {
   return fs.readFileSync(p).toString("base64");
-}
-
-function guessMimeFromName(name) {
-  const lower = name.toLowerCase();
-  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
-  return "image/png";
 }
 
 function pickPrompt(prompts, manifest, avoidLastN = 3) {
@@ -125,78 +115,66 @@ function pickPrompt(prompts, manifest, avoidLastN = 3) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function extractFirstImageAndSave(res, outPath) {
-  const candidates = res?.candidates || res?.response?.candidates || [];
-  if (!candidates.length) throw new Error("No candidates in response");
-  const parts = candidates[0]?.content?.parts || [];
-  const imgPart = parts.find((p) => p?.inlineData?.data);
-  if (!imgPart) throw new Error("No inlineData image part in first candidate");
-
-  const buf = Buffer.from(imgPart.inlineData.data, "base64");
-  fs.writeFileSync(outPath, buf);
-
-  const textNote = parts.find((p) => p?.text)?.text || null;
-  return {
-    modelVersion: res.modelVersion || null,
-    responseId: res.responseId || null,
-    textNote,
-  };
-}
-
 /* ---------- One step ---------- */
 async function main() {
   const t0 = Date.now();
   console.log("——— generateNano: start run ——─");
 
-  if (GATING_ENABLED) {
-    // --- NEW: PRODUCTIVITY GATE ---
-    console.log("Checking productivity gate...");
-    const now = new Date();
-    const checkStartTime = new Date(now.getTime() - ACTIVITY_CHECK_WINDOW_MS);
-    const rows = await fetchRescueTimeData(checkStartTime, now);
+  const now = new Date();
+  const todayMidnight = getTodayMidnight();
+  const rows = await fetchRescueTimeData(todayMidnight, now);
 
-    console.log("Raw data from RescueTime API:", rows);
-    const unproductiveMinutes = calculateUnproductiveMinutes(rows);
-    
-    console.log(`[gate] Unproductive time in last hour: ${unproductiveMinutes.toFixed(2)} minutes.`);
-  
-    if (unproductiveMinutes < UNPRODUCTIVE_THRESHOLD_MINUTES) {
-      console.log(`[gate] Threshold of ${UNPRODUCTIVE_THRESHOLD_MINUTES} minutes not met. Skipping image generation.`);
-      console.log("——— generateNano: end run (skipped) ——─\n");
-      return; // Exit the function early
-    }
-    
-    console.log(`[gate] ✅ Threshold met. Proceeding with image generation.`);
-    // --- END: PRODUCTIVITY GATE ---
+  console.log("Raw data from RescueTime API:", rows);
+  const unproductiveMinutes = calculateUnproductiveMinutes(rows);
+  const todayImageCount = await getTodayImageCountLocal();
+
+  console.log(`[gate] Total unproductive time today: ${unproductiveMinutes.toFixed(2)} minutes.`);
+  console.log(`[gate] Images generated today: ${todayImageCount}`);
+
+  // Calculate what threshold we should be at based on unproductive minutes
+  const expectedImageCount = Math.floor(unproductiveMinutes / UNPRODUCTIVE_THRESHOLD_INCREMENT) + 1;
+
+  if (todayImageCount >= expectedImageCount) {
+    console.log(
+      `[gate] Already generated ${todayImageCount} images. Next image at ${
+        (todayImageCount + 1) * UNPRODUCTIVE_THRESHOLD_INCREMENT
+      } minutes. Skipping image generation.`
+    );
+    console.log("——— generateNano: end run (skipped) ——─\n");
+    return; // Exit the function early
   }
+
+  console.log(
+    `[gate] ✅ Threshold met. Should have ${expectedImageCount} images, but only have ${todayImageCount}. Proceeding with image generation.`
+  );
+  // --- END: PRODUCTIVITY GATE ---
 
   if (!process.env.GEMINI_API_KEY) {
     throw new Error("GEMINI_API_KEY missing in backend/.env");
   }
 
-  ensureDirs();
-  const manifest = loadManifest();
   const prompts = loadPromptsFlat();
 
-  // Determine input image
-  let inputPath = latestOutputPath();
+  // Determine input image - get today's latest from Supabase or use base image for first run of day
+  let inputBase64 = await getLatestImageToday();
   let usedBase = false;
   let firstRun = false;
 
-  if (!inputPath) {
+  if (!inputBase64) {
+    // No image from today exists, this is the first run of the day
     firstRun = true;
-    const baseImage = path.join(IMAGES_DIR, "justin_base.png");
+    const baseImage = path.join(IMAGES_DIR, "emily_base.jpg");
 
     if (!fs.existsSync(baseImage)) {
       throw new Error(`Base image not found at ${baseImage}`);
     }
 
-    inputPath = baseImage;
+    inputBase64 = readImageAsBase64(baseImage);
     usedBase = true;
   }
 
-  // Pick one random effect (even on first run, just for logging/manifest)
-  const effect = pickPrompt(prompts, manifest, 3);
+  // Pick one random effect (even on first run, just for logging)
+  const effect = pickPrompt(prompts, { runs: [] }, 3);
 
   // Build full prompt:
   // - First run: your oil-painting instruction ONLY
@@ -206,58 +184,53 @@ async function main() {
   // Logs
   console.log(`[config] model=${MODEL}`);
   console.log(`[run] firstRun=${firstRun} usedBase=${usedBase}`);
-  console.log(`[paths] input=${path.relative(BACKEND_DIR, inputPath)}`);
-  console.log(
-    `[prompt] ${firstRun ? "firstRunPrompt" : "effect"}="${fullPrompt}"`
-  );
+  console.log(`[prompt] ${firstRun ? "firstRunPrompt" : "effect"}="${fullPrompt}"`);
 
   // Call Gemini
-  const base64 = readImageAsBase64(inputPath);
-  const mimeType = guessMimeFromName(inputPath);
+  const base64 = inputBase64;
+  const mimeType = "image/png"; // Default to PNG
 
   let res;
   try {
     res = await ai.models.generateContent({
       model: MODEL,
-      contents: [
-        { text: fullPrompt },
-        { inlineData: { mimeType, data: base64 } },
-      ],
+      contents: [{ text: fullPrompt }, { inlineData: { mimeType, data: base64 } }],
     });
   } catch (e) {
     console.error("❌ generateContent error:", e?.message || e);
     throw e;
   }
 
-  // Save output
-  const idx = nextVersion(manifest);
-  const outExt = mimeType.endsWith("jpeg") ? "jpg" : "png";
-  const outName = versionFilename(idx, outExt);
-  const outPath = path.join(OUT_DIR, outName);
-  const meta = extractFirstImageAndSave(res, outPath);
+  // Extract image from response
+  const candidates = res?.candidates || res?.response?.candidates || [];
+  if (!candidates.length) throw new Error("No candidates in response");
+  const parts = candidates[0]?.content?.parts || [];
+  const imgPart = parts.find((p) => p?.inlineData?.data);
+  if (!imgPart) throw new Error("No inlineData image part in first candidate");
 
-  // Manifest entry
-  const entry = {
-    version: idx,
-    input: path.relative(BACKEND_DIR, inputPath),
-    output: path.relative(BACKEND_DIR, outPath),
-    promptFull: fullPrompt,
-    promptEffectText: firstRun ? "(first-run)" : effect,
-    modelVersion: meta.modelVersion,
-    responseId: meta.responseId,
-    note: meta.textNote,
-    usedBaseOnThisRun: usedBase,
-    timestamp: new Date().toISOString(),
+  const imageBase64 = imgPart.inlineData.data;
+  const textNote = parts.find((p) => p?.text)?.text || null;
+
+  // Prepare metadata
+  const metadata = {
+    modelVersion: res.modelVersion || null,
+    responseId: res.responseId || null,
+    usedBase: usedBase,
+    note: textNote,
+    isJustin: false,
   };
-  manifest.runs.push(entry);
-  saveManifest(manifest);
+
+  // Upload to Supabase
+  const supabaseResult = await uploadImageToSupabase(imageBase64, "system", fullPrompt, metadata);
 
   const dt = ((Date.now() - t0) / 1000).toFixed(2);
   console.log(
-    `✅ v${String(idx).padStart(3, "0")} | ${path.basename(
-      inputPath
-    )} -> ${outName} | responseId=${meta.responseId || "n/a"} | ${dt}s`
+    `✅ Image generated and uploaded to Supabase | responseId=${res.responseId || "n/a"} | ${dt}s`
   );
+  console.log(`✅ Supabase file: ${supabaseResult[0].file_name}`);
+  if (textNote) {
+    console.log(`📝 AI Note: ${textNote}`);
+  }
   console.log("——— generateNano: end run ——─\n");
 }
 

@@ -251,6 +251,30 @@
       "note": null,
       "usedBaseOnThisRun": false,
       "timestamp": "2025-09-17T01:04:22.148Z"
+    },
+    {
+      "version": 22,
+      "input": "out/dorian_v021.png",
+      "output": "out/dorian_v022.png",
+      "promptFull": "Floorboards beneath the painting creak or darken with grime.",
+      "promptEffectText": "Floorboards beneath the painting creak or darken with grime.",
+      "modelVersion": "gemini-2.5-flash-image-preview",
+      "responseId": "2RvKaJfjNYmcz7IPmemN6Ag",
+      "note": "Here's an updated image with grimy floorboards beneath the painting. ",
+      "usedBaseOnThisRun": false,
+      "timestamp": "2025-09-17T02:24:26.326Z"
+    },
+    {
+      "version": 23,
+      "input": "out/dorian_v022.png",
+      "output": "out/dorian_v023.png",
+      "promptFull": "Glass over the frame fogs slightly or shows streaks and smudges.",
+      "promptEffectText": "Glass over the frame fogs slightly or shows streaks and smudges.",
+      "modelVersion": "gemini-2.5-flash-image-preview",
+      "responseId": "HhzKaPLkE5CHz7IPvdSGkQc",
+      "note": null,
+      "usedBaseOnThisRun": false,
+      "timestamp": "2025-09-17T02:25:34.779Z"
     }
   ]
 }

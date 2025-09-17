@@ -5,12 +5,11 @@ import { spawn } from "node:child_process";
 function spawnOnce() {
   return new Promise((resolve, reject) => {
     const proc = spawn("node", ["routes/generateNano.js"], {
-      cwd: new URL(".", import.meta.url).pathname.replace(/routes\/?$/, ""),
+      cwd: process.cwd(), // Use the current working directory where worker.js was started
       stdio: "inherit",
+      env: process.env, // Explicitly pass environment variables
     });
-    proc.on("close", (code) =>
-      code === 0 ? resolve() : reject(new Error(`exit ${code}`))
-    );
+    proc.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`exit ${code}`))));
     proc.on("error", reject);
   });
 }
