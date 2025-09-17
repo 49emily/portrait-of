@@ -1,12 +1,13 @@
+// server.js
+
 // Load environment variables first
 import "./config.js";
 
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "node:fs"; // <-- Add fs
 import { fileURLToPath } from "url";
-import generateRouter from "./routes/generate.js";
-import screentimeRouter from "./routes/screentime.js";
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -15,58 +16,57 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-// Middleware
+// --- Directories ---
+// Assumes server.js is in the root of your backend project
+const OUT_DIR = path.join(__dirname, "out");
+const MANIFEST_PATH = path.join(OUT_DIR, "manifest.json");
+
+// --- Middleware ---
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/generate", generateRouter);
-app.use("/activity", screentimeRouter);
 
-// Health check endpoint
+// --- Static Asset Serving ---
+// Make the `/out` directory publicly accessible at the URL /out
+// e.g., http://localhost:3000/out/dorian_v001.png
+app.use("/out", express.static(OUT_DIR));
+
+// --- API Routes ---
+
+// Health check endpoint (this is good to keep)
 app.get("/health", (req, res) => {
-  res.json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    service: "Dorian RescueTime Backend",
-  });
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
-// Root endpoint with API information
+// The NEW endpoint for our frontend viewer
+app.get("/api/portrait-history", (req, res) => {
+  if (!fs.existsSync(MANIFEST_PATH)) {
+    return res.json({ success: true, history: [] }); // Return empty if no runs yet
+  }
+  try {
+    const manifest = JSON.parse(fs.readFileSync(MANIFEST_PATH, "utf-8"));
+    const history = manifest.runs || [];
+    res.json({ success: true, history: history.reverse() }); // Newest first
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Failed to read portrait history." });
+  }
+});
+
+// Root endpoint with updated API information
 app.get("/", (req, res) => {
   res.json({
-    message: "Dorian RescueTime Backend API",
-    version: "1.0.0",
+    message: "Dorian Portrait Viewer API",
+    version: "2.0.0",
     endpoints: {
-      "/activity/past-hour": "GET - Fetch activity data from the past hour",
-      "/generate/generate-image": "POST - Generate image based on top 4 activities from past hour",
+      "/api/portrait-history": "GET - Fetch the entire history of portrait generations.",
       "/health": "GET - Health check",
-    },
-    documentation: {
-      pastHour: {
-        description: "Returns detailed activity data for the past hour",
-        response: {
-          timeRange: "Object with from/to timestamps",
-          summary: "Aggregated statistics",
-          activities: "Array of activities sorted by time spent",
-          rawData: "Original RescueTime API response data",
-        },
-      },
     },
   });
 });
 
-// Start server
+// --- Start Server ---
 app.listen(PORT, () => {
-  console.log(`🚀 Dorian RescueTime Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`⏰ Past hour data: http://localhost:${PORT}/api/activity/past-hour`);
-
-  if (!process.env.RESCUETIME_API_KEY) {
-    console.warn("⚠️  Warning: RESCUETIME_API_KEY not set in environment variables");
-    console.log(
-      "📝 Please create a .env file based on env.template and add your RescueTime API key"
-    );
-  }
+  console.log(`🚀 API Server (the "Waiter") running on port ${PORT}`);
+  console.log(`🖼️ Serving images from: ${OUT_DIR}`);
 });
 
 export default app;

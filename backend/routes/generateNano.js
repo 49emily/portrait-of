@@ -23,7 +23,7 @@ const FIRST_RUN_PROMPT =
   "Render this photograph as a realistic oil portrait in a golden frame like a painting in an art museum exhibit. Preserve the subject's exact likeness and the original composition of the photo.";
 
   // --- NEW RESCUETIME CONFIG ---
-const GATING_ENABLED = true; // toggle for rescuetime productivty gate
+const GATING_ENABLED = false; // toggle for rescuetime productivty gate
 const UNPRODUCTIVE_THRESHOLD_MINUTES = 5; // Trigger if unproductive time is >= 10 minutes
 const ACTIVITY_CHECK_WINDOW_MS = 60 * 60 * 1000; // first number is minutes, change to whatever
 

@@ -16,6 +16,14 @@ From project root:
 ```bash
 node backend/routes/worker.js
 ```
+```
+node backend/server.js
+```
+```
+cd frontend
+npm run dev
+```
+
 
 What happens:
 
