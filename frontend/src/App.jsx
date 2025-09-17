@@ -83,18 +83,21 @@ function App() {
         {!isLoading && !error && (
           <>
             {viewedPortrait ? (
-              <div className="flex flex-row justify-center items-center gap-10 py-8">
+              // The main container is now responsive
+              <div className="flex flex-col md:flex-row justify-center items-center gap-10 py-8">
                 <div className="frame">
                   <img
                     src={viewedPortrait.imageUrl}
                     alt={`Version ${viewedPortrait.version} of the portrait`}
-                    className="block max-w-[500px] h-auto"
+                    // Adjusted max-width for better mobile view
+                    className="block w-full max-w-sm md:max-w-md lg:max-w-[500px] h-auto"
                   />
                 </div>
 
                 {/* --- Right Side: Column with Plaque and Screentime --- */}
-                <div className="flex flex-col gap-4">
-                  <div className="bg-gray-100 text-gray-800 max-w-80 p-6">
+                {/* This column is now full-width on mobile */}
+                <div className="flex flex-col gap-4 w-full md:max-w-80">
+                  <div className="bg-gray-100 text-gray-800 p-6">
                     <p className="font-bold text-base">Justin Guo & Emily Zhang</p>
                     <p className="font-bold text-base">
                       <em>Portrait of You (Version {viewedPortrait.version})</em>, {currentYear}
@@ -113,7 +116,7 @@ function App() {
 
                   {/* Screentime Progress Bar below the plaque */}
                   {screentime && (
-                    <div className="bg-gray-100 text-gray-800 max-w-80 p-6">
+                    <div className="bg-gray-100 text-gray-800 p-6">
                       <div className="text-sm font-bold mb-3 text-gray-800">
                         Today's Brainrot Time: {Math.floor(screentime.unproductiveMinutes)}m{" "}
                         {Math.floor((screentime.unproductiveMinutes % 1) * 60)}s
