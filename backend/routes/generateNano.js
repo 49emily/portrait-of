@@ -1,3 +1,5 @@
+// backend/routes/generateNano.js
+
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -8,50 +10,86 @@ import {
   uploadImageToSupabase,
   getTodayImageCount,
   getLatestImageToday,
+  getLatestImageAnyDay, // <— NEW
+  resolveUser,
 } from "../controllers/supabase.js";
 
-/* ---------- Paths ---------- */
+// ---------- CLI: --user=justin|emily ----------
+const argUser = (process.argv.find((a) => a.startsWith("--user=")) || "").split(
+  "="
+)[1];
+if (!argUser) {
+  console.error(
+    "❌ Missing --user. Usage: node generateNano.js --user=justin|emily"
+  );
+  process.exit(1);
+}
+const { isJustin, user } = resolveUser(argUser);
+
+// ---------- Reset policy parsing ----------
+const argReset =
+  (process.argv.find((a) => a.startsWith("--reset=")) || "").split("=")[1] ||
+  process.env.RESET_MODE ||
+  "never"; // never | daily | weekly | always
+
+// Accept 0-7; JS getDay(): Sun=0, Mon=1, ... Sat=6
+const argWeeklyDayRaw =
+  (process.argv.find((a) => a.startsWith("--weekly-day=")) || "").split(
+    "="
+  )[1] ||
+  process.env.WEEKLY_RESET_DAY ||
+  "1"; // default Monday
+
+const WEEKLY_RESET_DAY = (() => {
+  const n = Number(argWeeklyDayRaw);
+  if (Number.isNaN(n)) return 1;
+  if (n === 7) return 0; // allow 7 for Sunday
+  return Math.min(Math.max(n, 0), 6);
+})();
+
+// ---------- Paths ----------
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const BACKEND_DIR = path.join(__dirname, "..");
 const IMAGES_DIR = path.join(BACKEND_DIR, "images");
 const PROMPTS_PATH = path.join(BACKEND_DIR, "prompts.json");
 
-/* ---------- Config ---------- */
+// ---------- Config ----------
 const MODEL = "gemini-2.5-flash-image-preview";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// Keep this as your oil-painting instruction for run #1
 const FIRST_RUN_PROMPT =
   "Render this photograph as a realistic oil portrait in a golden frame like a painting in an art museum exhibit. Preserve the subject's exact likeness and the original composition of the photo.";
 
-const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30; // Generate image every 30 minutes of unproductive time
+const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
 
-/* ---------- Utils ---------- */
+// RescueTime keys per user
+const RESCUETIME_KEYS = {
+  justin: process.env.RESCUETIME_API_KEY_JUSTIN,
+  emily: process.env.RESCUETIME_API_KEY_EMILY,
+};
+const RESCUETIME_API_KEY = RESCUETIME_KEYS[user];
+if (!RESCUETIME_API_KEY) {
+  console.error(
+    `❌ Missing RescueTime key for ${user}. Did you set RESCUETIME_API_KEY_${user.toUpperCase()}?`
+  );
+  process.exit(1);
+}
 
-// Get midnight of current day
+// ---------- Utils ----------
 function getTodayMidnight() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-// Get count of images generated today from Supabase
-async function getTodayImageCountLocal() {
-  return await getTodayImageCount();
-}
-
 async function fetchRescueTimeData(startTime, endTime) {
-  if (!process.env.RESCUETIME_API_KEY) {
-    throw new Error("RESCUETIME_API_KEY missing in backend/.env");
-  }
-
-  // Set restrict_begin/end to full days to ensure we capture all possible data
-  // Then filter the response array by the actual startTime and endTime
-  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
   const endDate = endTime.toISOString().split("T")[0];
 
   const params = {
-    key: process.env.RESCUETIME_API_KEY,
+    key: RESCUETIME_API_KEY,
     perspective: "interval",
     resolution_time: "minute",
     restrict_begin: startDate,
@@ -61,38 +99,33 @@ async function fetchRescueTimeData(startTime, endTime) {
   };
 
   try {
-    const response = await axios.get("https://www.rescuetime.com/anapi/data", { params });
+    const response = await axios.get("https://www.rescuetime.com/anapi/data", {
+      params,
+    });
     const allRows = response.data.rows || [];
-
-    // Filter data to only include the specified time range
-    const filteredRows = allRows.filter((row) => {
-      // Row structure: [Date, Time Spent (seconds), Number of People, Activity, Category, Productivity]
-      // The first element is the timestamp in format "2024-01-01 14:05:00"
+    return allRows.filter((row) => {
       const timestamp = new Date(row[0]);
       return timestamp >= startTime && timestamp <= endTime;
     });
-
-    return filteredRows;
   } catch (error) {
-    console.error("❌ RescueTime API Error:", error.response?.data || error.message);
-    return []; // Return empty array on error to prevent crashing
+    console.error(
+      "❌ RescueTime API Error:",
+      error.response?.data || error.message
+    );
+    return [];
   }
 }
 
-// prunes the full data to just the unproductive minutes
-// potentially rework / remove if we want more rich data in the future
 function calculateUnproductiveMinutes(rows) {
   const unproductiveSeconds = rows
-    .filter((row) => row[5] < 0) // row[5] is the productivity score
-    .reduce((total, row) => total + (row[1] || 0), 0); // row[1] is time in seconds
-
+    .filter((row) => row[5] < 0)
+    .reduce((total, row) => total + (row[1] || 0), 0);
   return unproductiveSeconds / 60;
 }
 
 function loadPromptsFlat() {
-  if (!fs.existsSync(PROMPTS_PATH)) {
+  if (!fs.existsSync(PROMPTS_PATH))
     throw new Error(`prompts.json not found at ${PROMPTS_PATH}`);
-  }
   const raw = JSON.parse(fs.readFileSync(PROMPTS_PATH, "utf-8"));
   const flat = Array.isArray(raw) ? raw : Object.values(raw).flat();
   if (!flat.length) throw new Error("prompts.json is empty.");
@@ -115,93 +148,121 @@ function pickPrompt(prompts, manifest, avoidLastN = 3) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-/* ---------- One step ---------- */
+// ---------- Reset decision ----------
+async function selectInputImage({ isJustin, user, resetMode }) {
+  // First, see if there is any image ever
+  const latestAny = await getLatestImageAnyDay(isJustin);
+  const latestToday = await getLatestImageToday(isJustin);
+
+  // If no history at all, must use base
+  if (!latestAny) {
+    return { base64: null, forceBase: true, reason: "no-history" };
+  }
+
+  // Decide policy
+  const today = new Date();
+  const dow = today.getDay(); // Sun=0...Sat=6
+
+  switch ((resetMode || "never").toLowerCase()) {
+    case "always":
+      return { base64: null, forceBase: true, reason: "always" };
+    case "daily":
+      // If we haven't generated today yet, start from base; otherwise chain from latest
+      return latestToday
+        ? { base64: latestAny, forceBase: false, reason: "daily-has-today" }
+        : { base64: null, forceBase: true, reason: "daily-first-of-day" };
+    case "weekly":
+      if (dow === WEEKLY_RESET_DAY) {
+        // On reset weekday: first generation of the day uses base
+        return latestToday
+          ? { base64: latestAny, forceBase: false, reason: "weekly-has-today" }
+          : { base64: null, forceBase: true, reason: "weekly-first-of-day" };
+      }
+      return {
+        base64: latestAny,
+        forceBase: false,
+        reason: "weekly-non-reset-day",
+      };
+    case "never":
+    default:
+      return { base64: latestAny, forceBase: false, reason: "never" };
+  }
+}
+
+// ---------- One step ----------
 async function main() {
   const t0 = Date.now();
-  console.log("——— generateNano: start run ——─");
+  console.log(
+    `——— generateNano (${user}): start run ——─ (reset=${argReset}, weeklyDay=${WEEKLY_RESET_DAY})`
+  );
 
   const now = new Date();
   const todayMidnight = getTodayMidnight();
   const rows = await fetchRescueTimeData(todayMidnight, now);
 
-  console.log("Raw data from RescueTime API:", rows);
   const unproductiveMinutes = calculateUnproductiveMinutes(rows);
-  const todayImageCount = await getTodayImageCountLocal();
+  const todayImageCount = await getTodayImageCount(isJustin);
 
-  console.log(`[gate] Total unproductive time today: ${unproductiveMinutes.toFixed(2)} minutes.`);
-  console.log(`[gate] Images generated today: ${todayImageCount}`);
+  console.log(
+    `[gate][${user}] Unproductive today: ${unproductiveMinutes.toFixed(
+      2
+    )} min | images today: ${todayImageCount}`
+  );
 
-  // Calculate what threshold we should be at based on unproductive minutes
-  const expectedImageCount = Math.floor(unproductiveMinutes / UNPRODUCTIVE_THRESHOLD_INCREMENT) + 1;
+  const expectedImageCount =
+    Math.floor(unproductiveMinutes / UNPRODUCTIVE_THRESHOLD_INCREMENT) + 1;
 
   if (todayImageCount >= expectedImageCount) {
     console.log(
-      `[gate] Already generated ${todayImageCount} images. Next image at ${
+      `[gate][${user}] Next image at ${
         (todayImageCount + 1) * UNPRODUCTIVE_THRESHOLD_INCREMENT
-      } minutes. Skipping image generation.`
+      } min. Skipping.`
     );
     console.log("——— generateNano: end run (skipped) ——─\n");
-    return; // Exit the function early
+    return;
   }
 
-  console.log(
-    `[gate] ✅ Threshold met. Should have ${expectedImageCount} images, but only have ${todayImageCount}. Proceeding with image generation.`
-  );
-  // --- END: PRODUCTIVITY GATE ---
-
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.GEMINI_API_KEY)
     throw new Error("GEMINI_API_KEY missing in backend/.env");
-  }
-
   const prompts = loadPromptsFlat();
 
-  // Determine input image - get today's latest from Supabase or use base image for first run of day
-  let inputBase64 = await getLatestImageToday();
+  // Decide input image based on reset policy
+  const sel = await selectInputImage({ isJustin, user, resetMode: argReset });
+  let inputBase64 = sel.base64;
   let usedBase = false;
   let firstRun = false;
 
-  if (!inputBase64) {
-    // No image from today exists, this is the first run of the day
+  if (sel.forceBase) {
     firstRun = true;
-    const baseImage = path.join(IMAGES_DIR, "emily_base.jpg");
-
-    if (!fs.existsSync(baseImage)) {
+    const baseName = user === "justin" ? "justin_base.png" : "emily_base.jpg";
+    const baseImage = path.join(IMAGES_DIR, baseName);
+    if (!fs.existsSync(baseImage))
       throw new Error(`Base image not found at ${baseImage}`);
-    }
-
     inputBase64 = readImageAsBase64(baseImage);
     usedBase = true;
   }
 
-  // Pick one random effect (even on first run, just for logging)
   const effect = pickPrompt(prompts, { runs: [] }, 3);
-
-  // Build full prompt:
-  // - First run: your oil-painting instruction ONLY
-  // - Later runs: the raw line from prompts.json ONLY
   const fullPrompt = firstRun ? FIRST_RUN_PROMPT : effect;
 
-  // Logs
   console.log(`[config] model=${MODEL}`);
-  console.log(`[run] firstRun=${firstRun} usedBase=${usedBase}`);
-  console.log(`[prompt] ${firstRun ? "firstRunPrompt" : "effect"}="${fullPrompt}"`);
+  console.log(
+    `[run] user=${user} firstRun=${firstRun} usedBase=${usedBase} reason=${sel.reason}`
+  );
+  console.log(
+    `[prompt] ${firstRun ? "firstRunPrompt" : "effect"}="${fullPrompt}"`
+  );
 
-  // Call Gemini
-  const base64 = inputBase64;
-  const mimeType = "image/png"; // Default to PNG
+  // Gemini
+  const mimeType = "image/png";
+  const res = await ai.models.generateContent({
+    model: MODEL,
+    contents: [
+      { text: fullPrompt },
+      { inlineData: { mimeType, data: inputBase64 } },
+    ],
+  });
 
-  let res;
-  try {
-    res = await ai.models.generateContent({
-      model: MODEL,
-      contents: [{ text: fullPrompt }, { inlineData: { mimeType, data: base64 } }],
-    });
-  } catch (e) {
-    console.error("❌ generateContent error:", e?.message || e);
-    throw e;
-  }
-
-  // Extract image from response
   const candidates = res?.candidates || res?.response?.candidates || [];
   if (!candidates.length) throw new Error("No candidates in response");
   const parts = candidates[0]?.content?.parts || [];
@@ -211,30 +272,33 @@ async function main() {
   const imageBase64 = imgPart.inlineData.data;
   const textNote = parts.find((p) => p?.text)?.text || null;
 
-  // Prepare metadata
   const metadata = {
     modelVersion: res.modelVersion || null,
     responseId: res.responseId || null,
     usedBase: usedBase,
     note: textNote,
-    isJustin: false,
+    isJustin: isJustin,
   };
 
-  // Upload to Supabase
-  const supabaseResult = await uploadImageToSupabase(imageBase64, "system", fullPrompt, metadata);
+  const supabaseResult = await uploadImageToSupabase(
+    imageBase64,
+    user,
+    fullPrompt,
+    metadata
+  );
 
   const dt = ((Date.now() - t0) / 1000).toFixed(2);
   console.log(
-    `✅ Image generated and uploaded to Supabase | responseId=${res.responseId || "n/a"} | ${dt}s`
+    `✅ (${user}) Image generated & uploaded | responseId=${
+      res.responseId || "n/a"
+    } | ${dt}s`
   );
   console.log(`✅ Supabase file: ${supabaseResult[0].file_name}`);
-  if (textNote) {
-    console.log(`📝 AI Note: ${textNote}`);
-  }
+  if (textNote) console.log(`📝 AI Note: ${textNote}`);
   console.log("——— generateNano: end run ——─\n");
 }
 
 main().catch((err) => {
-  console.error("❌ decayStep failed:", err);
+  console.error("❌ generateNano failed:", err);
   process.exit(1);
 });
