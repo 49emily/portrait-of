@@ -6,14 +6,9 @@ import { decode } from "base64-arraybuffer";
 
 let supabase = null;
 if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 } else {
-  console.warn(
-    "⚠️  Supabase service role key not configured. Admin ops disabled."
-  );
+  console.warn("⚠️  Supabase service role key not configured. Admin ops disabled.");
 }
 
 export function resolveUser(user) {
@@ -64,8 +59,7 @@ export const getPortraitHistory = async (isJustinFlag) => {
     note: record.note,
     is_justin: record.is_justin,
     timestamp: record.created_at,
-    imageUrl: supabase.storage.from("images").getPublicUrl(record.file_name)
-      .data.publicUrl,
+    imageUrl: supabase.storage.from("images").getPublicUrl(record.file_name).data.publicUrl,
   }));
 };
 
@@ -118,12 +112,7 @@ export const getLatestImageAnyDay = async (isJustinFlag) => {
   return Buffer.from(arrayBuffer).toString("base64");
 };
 
-export const uploadImageToSupabase = async (
-  imageBase64,
-  user_id,
-  prompt,
-  metadata = {}
-) => {
+export const uploadImageToSupabase = async (imageBase64, user_id, prompt, metadata = {}) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   const image_path = `${Date.now()}.png`;
@@ -154,10 +143,7 @@ export const uploadImageToSupabase = async (
     version: nextVersion, // ← per-user version
   };
 
-  const { data, error } = await supabase
-    .from("outputs")
-    .insert(insertData)
-    .select();
+  const { data, error } = await supabase.from("outputs").insert(insertData).select();
 
   if (error) throw error;
   return data;

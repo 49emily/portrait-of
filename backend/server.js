@@ -28,8 +28,16 @@ const RESCUETIME_KEYS = {
 
 // --- Utils ---
 function getTodayMidnight() {
+  // Force Eastern Time (ET) - handles both EST and EDT automatically
   const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  return new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
+}
+
+function getCurrentTimeInEastern() {
+  // Get current time in Eastern timezone
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
 }
 
 async function fetchRescueTimeDataForUser(user, startTime, endTime) {
@@ -37,9 +45,7 @@ async function fetchRescueTimeDataForUser(user, startTime, endTime) {
   if (!apiKey) throw new Error(`Missing RescueTime key for ${user}`);
 
   // Pull a larger range and then filter locally to the minute
-  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
+  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const endDate = endTime.toISOString().split("T")[0];
 
   const params = {
@@ -62,10 +68,7 @@ async function fetchRescueTimeDataForUser(user, startTime, endTime) {
       return timestamp >= startTime && timestamp <= endTime;
     });
   } catch (error) {
-    console.error(
-      `❌ RescueTime API Error (${user}):`,
-      error.response?.data || error.message
-    );
+    console.error(`❌ RescueTime API Error (${user}):`, error.response?.data || error.message);
     return [];
   }
 }
@@ -89,11 +92,9 @@ app.get("/", (req, res) => {
     version: "2.0.0",
     endpoints: {
       "/api/justin/portrait-history": "Justin's generations",
-      "/api/justin/current-screentime":
-        "Justin's current unproductive minutes + thresholds",
+      "/api/justin/current-screentime": "Justin's current unproductive minutes + thresholds",
       "/api/emily/portrait-history": "Emily's generations",
-      "/api/emily/current-screentime":
-        "Emily's current unproductive minutes + thresholds",
+      "/api/emily/current-screentime": "Emily's current unproductive minutes + thresholds",
       "/health": "Health check",
     },
   });
@@ -122,9 +123,9 @@ app.get("/api/:user/current-screentime", async (req, res) => {
     const { user } = req.params; // 'justin' | 'emily'
     resolveUser(user); // validates
 
-    const now = new Date();
+    const nowEastern = getCurrentTimeInEastern();
     const todayMidnight = getTodayMidnight();
-    const rows = await fetchRescueTimeDataForUser(user, todayMidnight, now);
+    const rows = await fetchRescueTimeDataForUser(user, todayMidnight, nowEastern);
     const unproductiveMinutes = calculateUnproductiveMinutes(rows);
 
     const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
@@ -137,7 +138,8 @@ app.get("/api/:user/current-screentime", async (req, res) => {
       unproductiveMinutes: Math.round(unproductiveMinutes * 100) / 100,
       expectedImageCount,
       nextThreshold: expectedImageCount * UNPRODUCTIVE_THRESHOLD_INCREMENT,
-      timestamp: now.toISOString(),
+      timestamp: nowEastern.toISOString(),
+      timezone: "America/New_York",
     });
   } catch (error) {
     console.error("Error fetching current screentime:", error);
