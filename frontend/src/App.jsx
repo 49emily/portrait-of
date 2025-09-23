@@ -117,7 +117,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
         )}
 
         {screentime && (
-          <div className="bg-gray-100 text-gray-800 p-6">
+          <div className="bg-gray-100 text-gray-800 p-6 pb-4">
             <div className="text-sm font-bold mb-3 text-gray-800">
               Today's Brainrot Time: {Math.floor(screentime.unproductiveMinutes)}m{" "}
               {Math.floor((screentime.unproductiveMinutes % 1) * 60)}s
@@ -156,7 +156,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
 
         {/* Photo Carousel */}
         {history.length > 0 && (
-          <div className="mt-6 flex justify-center">
+          <div className="flex justify-center">
             <Carousel className="w-[calc(100%-30px)]">
               <CarouselContent className="-ml-2">
                 {history.map((portrait, index) => {
@@ -171,7 +171,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                         onMouseLeave={handlePortraitLeave}
                         onClick={() => handlePortraitClick(portrait)}
                       >
-                        <div className="aspect-square overflow-hidden rounded-md bg-gray-100">
+                        <div className="overflow-hidden rounded-md bg-gray-100">
                           <img
                             src={portrait.imageUrl}
                             alt={`Version ${portrait.version}`}
