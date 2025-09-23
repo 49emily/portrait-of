@@ -194,7 +194,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
 }
 
 function App() {
-  const API_BASE_URL = "http://localhost:3000";
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8 pt-12">
