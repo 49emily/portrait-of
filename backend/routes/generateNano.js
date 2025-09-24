@@ -9,43 +9,22 @@ import axios from "axios";
 import {
   uploadImageToSupabase,
   getTodayImageCount,
+  getWeeklyImageCount,
   getLatestImageToday,
   getLatestImageAnyDay, // <— NEW
   resolveUser,
 } from "../controllers/supabase.js";
 
 // ---------- CLI: --user=justin|emily ----------
-const argUser = (process.argv.find((a) => a.startsWith("--user=")) || "").split(
-  "="
-)[1];
+const argUser = (process.argv.find((a) => a.startsWith("--user=")) || "").split("=")[1];
 if (!argUser) {
-  console.error(
-    "❌ Missing --user. Usage: node generateNano.js --user=justin|emily"
-  );
+  console.error("❌ Missing --user. Usage: node generateNano.js --user=justin|emily");
   process.exit(1);
 }
 const { isJustin, user } = resolveUser(argUser);
 
-// ---------- Reset policy parsing ----------
-const argReset =
-  (process.argv.find((a) => a.startsWith("--reset=")) || "").split("=")[1] ||
-  process.env.RESET_MODE ||
-  "never"; // never | daily | weekly | always
-
-// Accept 0-7; JS getDay(): Sun=0, Mon=1, ... Sat=6
-const argWeeklyDayRaw =
-  (process.argv.find((a) => a.startsWith("--weekly-day=")) || "").split(
-    "="
-  )[1] ||
-  process.env.WEEKLY_RESET_DAY ||
-  "1"; // default Monday
-
-const WEEKLY_RESET_DAY = (() => {
-  const n = Number(argWeeklyDayRaw);
-  if (Number.isNaN(n)) return 1;
-  if (n === 7) return 0; // allow 7 for Sunday
-  return Math.min(Math.max(n, 0), 6);
-})();
+// ---------- Weekly reset configuration ----------
+const WEEKLY_RESET_DAY = 0; // Sunday
 
 // ---------- Paths ----------
 const __filename = fileURLToPath(import.meta.url);
@@ -82,10 +61,36 @@ function getTodayMidnight() {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
+function getWeekStartMidnight() {
+  // Get start of current week (Sunday 12 AM Eastern)
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+
+  // Get the current day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = easternTime.getDay();
+
+  // Calculate days to subtract to get to Sunday
+  const daysToSubtract = dayOfWeek;
+
+  // Create Sunday midnight
+  const weekStart = new Date(
+    easternTime.getFullYear(),
+    easternTime.getMonth(),
+    easternTime.getDate()
+  );
+  weekStart.setDate(weekStart.getDate() - daysToSubtract);
+
+  return weekStart;
+}
+
+function getCurrentTimeInEastern() {
+  // Get current time in Eastern timezone
+  const now = new Date();
+  return new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+}
+
 async function fetchRescueTimeData(startTime, endTime) {
-  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000)
-    .toISOString()
-    .split("T")[0];
+  const startDate = new Date(startTime.getTime() - 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const endDate = endTime.toISOString().split("T")[0];
 
   const params = {
@@ -108,10 +113,7 @@ async function fetchRescueTimeData(startTime, endTime) {
       return timestamp >= startTime && timestamp <= endTime;
     });
   } catch (error) {
-    console.error(
-      "❌ RescueTime API Error:",
-      error.response?.data || error.message
-    );
+    console.error("❌ RescueTime API Error:", error.response?.data || error.message);
     return [];
   }
 }
@@ -124,8 +126,7 @@ function calculateUnproductiveMinutes(rows) {
 }
 
 function loadPromptsFlat() {
-  if (!fs.existsSync(PROMPTS_PATH))
-    throw new Error(`prompts.json not found at ${PROMPTS_PATH}`);
+  if (!fs.existsSync(PROMPTS_PATH)) throw new Error(`prompts.json not found at ${PROMPTS_PATH}`);
   const raw = JSON.parse(fs.readFileSync(PROMPTS_PATH, "utf-8"));
   const flat = Array.isArray(raw) ? raw : Object.values(raw).flat();
   if (!flat.length) throw new Error("prompts.json is empty.");
@@ -148,8 +149,8 @@ function pickPrompt(prompts, manifest, avoidLastN = 3) {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// ---------- Reset decision ----------
-async function selectInputImage({ isJustin, user, resetMode }) {
+// ---------- Weekly reset decision ----------
+async function selectInputImage({ isJustin }) {
   // First, see if there is any image ever
   const latestAny = await getLatestImageAnyDay(isJustin);
   const latestToday = await getLatestImageToday(isJustin);
@@ -159,75 +160,60 @@ async function selectInputImage({ isJustin, user, resetMode }) {
     return { base64: null, forceBase: true, reason: "no-history" };
   }
 
-  // Decide policy
+  // Weekly reset logic: reset on Sunday, continue chaining other days
   const today = new Date();
   const dow = today.getDay(); // Sun=0...Sat=6
 
-  switch ((resetMode || "never").toLowerCase()) {
-    case "always":
-      return { base64: null, forceBase: true, reason: "always" };
-    case "daily":
-      // If we haven't generated today yet, start from base; otherwise chain from latest
-      return latestToday
-        ? { base64: latestAny, forceBase: false, reason: "daily-has-today" }
-        : { base64: null, forceBase: true, reason: "daily-first-of-day" };
-    case "weekly":
-      if (dow === WEEKLY_RESET_DAY) {
-        // On reset weekday: first generation of the day uses base
-        return latestToday
-          ? { base64: latestAny, forceBase: false, reason: "weekly-has-today" }
-          : { base64: null, forceBase: true, reason: "weekly-first-of-day" };
-      }
-      return {
-        base64: latestAny,
-        forceBase: false,
-        reason: "weekly-non-reset-day",
-      };
-    case "never":
-    default:
-      return { base64: latestAny, forceBase: false, reason: "never" };
+  if (dow === WEEKLY_RESET_DAY) {
+    // On Sunday: first generation of the day uses base image
+    return latestToday
+      ? { base64: latestAny, forceBase: false, reason: "weekly-has-today" }
+      : { base64: null, forceBase: true, reason: "weekly-first-of-day" };
   }
+
+  // Non-Sunday: continue chaining from latest image
+  return {
+    base64: latestAny,
+    forceBase: false,
+    reason: "weekly-non-reset-day",
+  };
 }
 
 // ---------- One step ----------
 async function main() {
   const t0 = Date.now();
-  console.log(
-    `——— generateNano (${user}): start run ——─ (reset=${argReset}, weeklyDay=${WEEKLY_RESET_DAY})`
-  );
+  console.log(`——— generateNano (${user}): start run ——─ (weekly reset on Sunday)`);
 
-  const now = new Date();
-  const todayMidnight = getTodayMidnight();
-  const rows = await fetchRescueTimeData(todayMidnight, now);
+  const nowEastern = getCurrentTimeInEastern();
+  const weekStartMidnight = getWeekStartMidnight();
+  const rows = await fetchRescueTimeData(weekStartMidnight, nowEastern);
 
   const unproductiveMinutes = calculateUnproductiveMinutes(rows);
-  const todayImageCount = await getTodayImageCount(isJustin);
+  const weeklyImageCount = await getWeeklyImageCount(isJustin);
 
   console.log(
-    `[gate][${user}] Unproductive today: ${unproductiveMinutes.toFixed(
+    `[gate][${user}] Unproductive this week: ${unproductiveMinutes.toFixed(
       2
-    )} min | images today: ${todayImageCount}`
+    )} min | images this week: ${weeklyImageCount}`
   );
 
-  const expectedImageCount =
-    Math.floor(unproductiveMinutes / UNPRODUCTIVE_THRESHOLD_INCREMENT) + 1;
+  const expectedImageCount = Math.floor(unproductiveMinutes / UNPRODUCTIVE_THRESHOLD_INCREMENT) + 1;
 
-  if (todayImageCount >= expectedImageCount) {
+  if (weeklyImageCount >= expectedImageCount) {
     console.log(
       `[gate][${user}] Next image at ${
-        (todayImageCount + 1) * UNPRODUCTIVE_THRESHOLD_INCREMENT
+        (weeklyImageCount + 1) * UNPRODUCTIVE_THRESHOLD_INCREMENT
       } min. Skipping.`
     );
     console.log("——— generateNano: end run (skipped) ——─\n");
     return;
   }
 
-  if (!process.env.GEMINI_API_KEY)
-    throw new Error("GEMINI_API_KEY missing in backend/.env");
+  if (!process.env.GEMINI_API_KEY) throw new Error("GEMINI_API_KEY missing in backend/.env");
   const prompts = loadPromptsFlat();
 
-  // Decide input image based on reset policy
-  const sel = await selectInputImage({ isJustin, user, resetMode: argReset });
+  // Decide input image based on weekly reset policy
+  const sel = await selectInputImage({ isJustin });
   let inputBase64 = sel.base64;
   let usedBase = false;
   let firstRun = false;
@@ -236,8 +222,7 @@ async function main() {
     firstRun = true;
     const baseName = user === "justin" ? "justin_base.png" : "emily_base.jpg";
     const baseImage = path.join(IMAGES_DIR, baseName);
-    if (!fs.existsSync(baseImage))
-      throw new Error(`Base image not found at ${baseImage}`);
+    if (!fs.existsSync(baseImage)) throw new Error(`Base image not found at ${baseImage}`);
     inputBase64 = readImageAsBase64(baseImage);
     usedBase = true;
   }
@@ -246,21 +231,14 @@ async function main() {
   const fullPrompt = firstRun ? FIRST_RUN_PROMPT : effect;
 
   console.log(`[config] model=${MODEL}`);
-  console.log(
-    `[run] user=${user} firstRun=${firstRun} usedBase=${usedBase} reason=${sel.reason}`
-  );
-  console.log(
-    `[prompt] ${firstRun ? "firstRunPrompt" : "effect"}="${fullPrompt}"`
-  );
+  console.log(`[run] user=${user} firstRun=${firstRun} usedBase=${usedBase} reason=${sel.reason}`);
+  console.log(`[prompt] ${firstRun ? "firstRunPrompt" : "effect"}="${fullPrompt}"`);
 
   // Gemini
   const mimeType = "image/png";
   const res = await ai.models.generateContent({
     model: MODEL,
-    contents: [
-      { text: fullPrompt },
-      { inlineData: { mimeType, data: inputBase64 } },
-    ],
+    contents: [{ text: fullPrompt }, { inlineData: { mimeType, data: inputBase64 } }],
   });
 
   const candidates = res?.candidates || res?.response?.candidates || [];
@@ -280,18 +258,11 @@ async function main() {
     isJustin: isJustin,
   };
 
-  const supabaseResult = await uploadImageToSupabase(
-    imageBase64,
-    user,
-    fullPrompt,
-    metadata
-  );
+  const supabaseResult = await uploadImageToSupabase(imageBase64, user, fullPrompt, metadata);
 
   const dt = ((Date.now() - t0) / 1000).toFixed(2);
   console.log(
-    `✅ (${user}) Image generated & uploaded | responseId=${
-      res.responseId || "n/a"
-    } | ${dt}s`
+    `✅ (${user}) Image generated & uploaded | responseId=${res.responseId || "n/a"} | ${dt}s`
   );
   console.log(`✅ Supabase file: ${supabaseResult[0].file_name}`);
   if (textNote) console.log(`📝 AI Note: ${textNote}`);

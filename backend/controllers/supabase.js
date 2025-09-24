@@ -35,6 +35,39 @@ export const getTodayImageCount = async (isJustinFlag) => {
   return data ? data.length : 0;
 };
 
+export const getWeeklyImageCount = async (isJustinFlag) => {
+  if (!supabase) throw new Error("Supabase not configured.");
+
+  // Get start of current week (Sunday 12 AM Eastern)
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+
+  // Get the current day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = easternTime.getDay();
+
+  // Calculate days to subtract to get to Sunday
+  const daysToSubtract = dayOfWeek;
+
+  // Create Sunday midnight
+  const weekStart = new Date(
+    easternTime.getFullYear(),
+    easternTime.getMonth(),
+    easternTime.getDate()
+  );
+  weekStart.setDate(weekStart.getDate() - daysToSubtract);
+
+  const weekStartISO = weekStart.toISOString();
+
+  const { data, error } = await supabase
+    .from("outputs")
+    .select("id")
+    .gte("created_at", weekStartISO)
+    .eq("is_justin", isJustinFlag);
+
+  if (error) throw error;
+  return data ? data.length : 0;
+};
+
 export const getPortraitHistory = async (isJustinFlag) => {
   if (!supabase) throw new Error("Supabase not configured.");
 

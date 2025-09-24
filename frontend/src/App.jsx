@@ -63,8 +63,6 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
     }
   }, [history, selectedPortrait]);
 
-  const currentYear = new Date().getFullYear();
-
   const handlePortraitHover = (portrait) => {
     setViewedPortrait(portrait);
   };
@@ -105,12 +103,19 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
           <div className="bg-gray-100 text-gray-800 p-6">
             <p className="font-bold text-base">{plaqueName}</p>
             <p className="font-bold text-base">
-              <em>Portrait of You (Version {viewedPortrait.version})</em>, {currentYear}
+              <em>Portrait of You (Version {viewedPortrait.version})</em>
             </p>
-            <p className="text-sm text-gray-800 mb-2">Digital, AI Generation</p>
+            <p className="text-sm">
+              {new Date(viewedPortrait.timestamp).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+            <p className="text-sm text-gray-800">Digital, AI Generation</p>
 
             <br />
-            <div className="text-sm leading-relaxed m-0 min-h-[4rem] max-h-[4rem] overflow-y-auto">
+            <div className="text-sm leading-relaxed m-0 min-h-[3rem] max-h-[3rem] overflow-y-auto">
               <p className="m-0">The last transformation: "{viewedPortrait.prompt}"</p>
             </div>
           </div>
@@ -118,38 +123,35 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
 
         {screentime && (
           <div className="bg-gray-100 text-gray-800 p-6 pb-4">
-            <div className="text-sm font-bold mb-3 text-gray-800">
-              Today's Brainrot Time: {Math.floor(screentime.unproductiveMinutes)}m{" "}
-              {Math.floor((screentime.unproductiveMinutes % 1) * 60)}s
-            </div>
-            <div className="mb-6">
-              <div className="relative h-5 bg-white border border-gray-600 overflow-visible">
-                <div
-                  className="h-full bg-gray-800 transition-all duration-300 ease-in-out"
-                  style={{
-                    width: `${Math.min((screentime.unproductiveMinutes / 240) * 100, 100)}%`,
-                  }}
-                />
-                {Array.from({ length: 8 }, (_, i) => {
-                  const minutes = (i + 1) * 30;
-                  const position = (minutes / 240) * 100;
-                  return (
-                    <div
-                      key={minutes}
-                      className="absolute top-0 h-full pointer-events-none"
-                      style={{ left: `${position}%` }}
-                    >
-                      <div className="absolute left-0 top-0 w-px h-full bg-gray-600" />
-                      <div className="absolute left-1/2 top-5 transform -translate-x-1/2 text-xs text-gray-600 whitespace-nowrap">
-                        {minutes}m
-                      </div>
-                    </div>
-                  );
-                })}
+            <div className="flex justify-between gap-6">
+              {/* Weekly Brainrot Time */}
+              <div className="text-center flex-1">
+                <div className="text-2xl text-gray-800 font-bold mb-1">
+                  {Math.floor(screentime.unproductiveMinutes)}m
+                </div>
+                <div className="text-sm text-gray-600 leading-tight">This Week's Brainrot Time</div>
+              </div>
+
+              {/* Total Brainrot Time */}
+              <div className="text-center flex-1">
+                <div className="text-2xl text-gray-800 font-bold mb-1">
+                  {screentime.totalUnproductiveMinutes
+                    ? `${Math.floor(screentime.totalUnproductiveMinutes / 60)}h ${Math.floor(
+                        screentime.totalUnproductiveMinutes % 60
+                      )}m`
+                    : "0h 0m"}
+                </div>
+                <div className="text-sm text-gray-600 leading-tight">
+                  Total Brainrot Since Start
+                </div>
               </div>
             </div>
-            <div className="text-xs text-gray-500 text-center">
+
+            <div className="text-xs text-gray-500 text-center mt-4">
               Next image at {screentime.nextThreshold}m
+            </div>
+            <div className="text-xs text-gray-500 text-center">
+              Portrait resets every Sunday at midnight EST
             </div>
           </div>
         )}

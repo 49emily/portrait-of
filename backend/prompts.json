@@ -12,17 +12,16 @@
     "Pigments dull unevenly, leaving blotches of faded and browned color.",
     "A diagonal tear opens in the lower canvas, fibers fraying at the edges.",
     "Edges of brushstrokes lift, curling slightly away from the surface.",
-    "Stains seep upward from the bottom edge, leaving tide-like marks."
+    "Stains seep upward from the bottom edge, leaving tide-like marks.",
+    "Cobwebs have formed on the sides of the painting."
   ],
   "frame": [
     "Frame tarnishes from gold to a dull bronze or greenish patina.",
-    "Glass over the frame fogs slightly or shows streaks and smudges.",
     "Humidity warps the wood frame, twisting it subtly out of shape.",
     "Ornate frame carvings lose their sharpness, worn smooth with age.",
     "Gold leaf chips off the frame, exposing raw wood beneath.",
     "Corners of the frame split apart, leaving visible gaps.",
-    "Frame joints sag slightly, making the painting tilt.",
-    "Protective glass fogs with a film of grime and faint streaks."
+    "Frame joints sag slightly, making the painting tilt."
   ],
   "wall": [
     "Cobwebs slowly appear in the corners of the frame and nearby wall.",
@@ -32,19 +31,12 @@
     "Plaster behind the piece crumbles, leaving hairline fissures spreading outward.",
     "Dampness discolors the wall, creating patches of darker tone.",
     "Wallpaper near the frame curls away, edges lifting.",
-    "Cobweb strands stretch between the frame and the surrounding wall.",
     "Nails rust, bleeding thin orange streaks down the wall."
   ],
   "atmosphere": [
-    "Dust accumulates on the frame’s ledges and the gallery floor.",
-    "Gallery lighting flickers, or becomes dimmer and uneven.",
     "Insects or moths briefly flutter near or land on the painting.",
-    "Floorboards beneath the painting creak or darken with grime.",
     "Plaque below the painting corrodes or becomes illegible.",
     "Air looks heavy with suspended dust, catching the projector beam of light.",
-    "Overhead lights flicker briefly, leaving the gallery dimmer.",
-    "Dead insects scatter on the floor beneath the painting.",
-    "Footprints in dust lead up to the painting, then fade away.",
     "A faint draft stirs the dust, unsettling the stillness of the gallery."
   ]
 }

@@ -34,6 +34,28 @@ function getTodayMidnight() {
   return new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
 }
 
+function getWeekStartMidnight() {
+  // Get start of current week (Sunday 12 AM Eastern)
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+
+  // Get the current day of week (0 = Sunday, 1 = Monday, etc.)
+  const dayOfWeek = easternTime.getDay();
+
+  // Calculate days to subtract to get to Sunday
+  const daysToSubtract = dayOfWeek;
+
+  // Create Sunday midnight
+  const weekStart = new Date(
+    easternTime.getFullYear(),
+    easternTime.getMonth(),
+    easternTime.getDate()
+  );
+  weekStart.setDate(weekStart.getDate() - daysToSubtract);
+
+  return weekStart;
+}
+
 function getCurrentTimeInEastern() {
   // Get current time in Eastern timezone
   const now = new Date();
@@ -80,6 +102,15 @@ function calculateUnproductiveMinutes(rows) {
   return unproductiveSeconds / 60;
 }
 
+function getStartDateFromEnv() {
+  const startDateStr = process.env.TOTAL_START_DATE;
+  if (!startDateStr) {
+    console.warn("⚠️  TOTAL_START_DATE not configured, using default 2024-01-01");
+    return new Date("2024-01-01T00:00:00-05:00"); // Default to Jan 1, 2024 Eastern
+  }
+  return new Date(`${startDateStr}T00:00:00-05:00`); // Parse as Eastern time
+}
+
 // --- Health ---
 app.get("/health", (req, res) => {
   res.json({ status: "OK", timestamp: new Date().toISOString() });
@@ -92,9 +123,9 @@ app.get("/", (req, res) => {
     version: "2.0.0",
     endpoints: {
       "/api/justin/portrait-history": "Justin's generations",
-      "/api/justin/current-screentime": "Justin's current unproductive minutes + thresholds",
+      "/api/justin/current-screentime": "Justin's weekly unproductive minutes + thresholds",
       "/api/emily/portrait-history": "Emily's generations",
-      "/api/emily/current-screentime": "Emily's current unproductive minutes + thresholds",
+      "/api/emily/current-screentime": "Emily's weekly unproductive minutes + thresholds",
       "/health": "Health check",
     },
   });
@@ -124,9 +155,16 @@ app.get("/api/:user/current-screentime", async (req, res) => {
     resolveUser(user); // validates
 
     const nowEastern = getCurrentTimeInEastern();
-    const todayMidnight = getTodayMidnight();
-    const rows = await fetchRescueTimeDataForUser(user, todayMidnight, nowEastern);
-    const unproductiveMinutes = calculateUnproductiveMinutes(rows);
+    const weekStartMidnight = getWeekStartMidnight();
+    const startDate = getStartDateFromEnv();
+
+    // Fetch weekly data
+    const weeklyRows = await fetchRescueTimeDataForUser(user, weekStartMidnight, nowEastern);
+    const unproductiveMinutes = calculateUnproductiveMinutes(weeklyRows);
+
+    // Fetch total data from start date
+    const totalRows = await fetchRescueTimeDataForUser(user, startDate, nowEastern);
+    const totalUnproductiveMinutes = calculateUnproductiveMinutes(totalRows);
 
     const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
     const expectedImageCount =
@@ -136,10 +174,13 @@ app.get("/api/:user/current-screentime", async (req, res) => {
       success: true,
       user,
       unproductiveMinutes: Math.round(unproductiveMinutes * 100) / 100,
+      totalUnproductiveMinutes: Math.round(totalUnproductiveMinutes * 100) / 100,
       expectedImageCount,
       nextThreshold: expectedImageCount * UNPRODUCTIVE_THRESHOLD_INCREMENT,
       timestamp: nowEastern.toISOString(),
       timezone: "America/New_York",
+      weekStart: weekStartMidnight.toISOString(),
+      trackingStartDate: startDate.toISOString(),
     });
   } catch (error) {
     console.error("Error fetching current screentime:", error);
