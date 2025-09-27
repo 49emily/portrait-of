@@ -119,7 +119,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
             <p className="font-bold text-base">{plaqueName}</p>
             <p className="font-bold text-base">
               <em>
-                The Picture of {plaqueName} (Version {viewedPortrait.version})
+                Portrait of {plaqueName} (Version {viewedPortrait.version})
               </em>
             </p>
             <p className="text-sm">
@@ -263,14 +263,14 @@ function App() {
     <div className="min-h-screen flex flex-col items-center p-8 pt-16">
       <header className="w-full max-w-6xl text-center mb-10 animate-[fadeInFromTop_2s_ease-out]">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 text-white">
-          The Picture of You
+          Portrait of You
         </h1>
         <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-          <em>The Picture of You</em> is a series of living artworks that evolve with digital
-          behavior. Each portrait reflects the hidden cost of its owner's unproductive screen time,
-          capturing the slow transformation of identity in the age of distraction. The portraits
-          will reset weekly at midnight EST on Sunday, giving each person a new chance at redefining
-          themselves in an ongoing public installation of self-surveillance.
+          <em>Portrait of You</em> is a series of living artworks that evolve with digital behavior.
+          Each portrait reflects the hidden cost of its owner's unproductive screen time, capturing
+          the slow transformation of identity in the age of distraction. The portraits will reset
+          weekly at midnight EST on Sunday, giving each person a new chance at redefining themselves
+          in an ongoing public installation of self-surveillance.
         </p>
       </header>
 
