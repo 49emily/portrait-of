@@ -16,6 +16,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   const [error, setError] = useState(null);
   const [viewedPortrait, setViewedPortrait] = useState(null);
   const [selectedPortrait, setSelectedPortrait] = useState(null);
+  const [carouselApi, setCarouselApi] = useState(null);
 
   const HISTORY_URL = `${API_BASE_URL}/api/${user}/portrait-history`;
   const SCREEN_URL = `${API_BASE_URL}/api/${user}/current-screentime`;
@@ -63,6 +64,17 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
     }
   }, [history, selectedPortrait]);
 
+  // Scroll carousel to the last page when it loads
+  useEffect(() => {
+    if (carouselApi && history.length > 0) {
+      // Since we show 3 items per page (basis-1/3), calculate the last page
+      const itemsPerPage = 3;
+      const lastPageIndex = history.length - itemsPerPage;
+      // Scroll to the last page
+      carouselApi.scrollTo(lastPageIndex);
+    }
+  }, [carouselApi, history.length]);
+
   const handlePortraitHover = (portrait) => {
     setViewedPortrait(portrait);
   };
@@ -81,7 +93,10 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
       {/* Portrait image */}
       <div className="frame flex-shrink-0">
         {isLoading ? (
-          <p className="text-center">Loading...</p>
+          <div className="text-center p-8 flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
+            <p className="text-white">Loading portrait...</p>
+          </div>
         ) : error ? (
           <p className="text-center text-red-500">Error: {error}</p>
         ) : viewedPortrait ? (
@@ -91,7 +106,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
             className="block w-full max-w-sm md:max-w-md lg:max-w-[400px] h-auto"
           />
         ) : (
-          <div className="text-center p-8 border-2 border-dashed rounded-lg">
+          <div className="text-center p-8 border-2 border-dashed text-white rounded-lg">
             <p>No portraits yet for {plaqueName}.</p>
           </div>
         )}
@@ -103,7 +118,9 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
           <div className="bg-gray-100 text-gray-800 p-6">
             <p className="font-bold text-base">{plaqueName}</p>
             <p className="font-bold text-base">
-              <em>Portrait of You (Version {viewedPortrait.version})</em>
+              <em>
+                The Picture of {plaqueName} (Version {viewedPortrait.version})
+              </em>
             </p>
             <p className="text-sm">
               {new Date(viewedPortrait.timestamp).toLocaleDateString("en-US", {
@@ -121,13 +138,47 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
           </div>
         )}
 
-        {screentime && (
-          <div className="bg-gray-100 text-gray-800 p-6 pb-4">
+        {screentime ? (
+          <div className="bg-gray-100 text-gray-800 py-4 px-6">
+            {/* Most Recent Unproductive Activity */}
+            {screentime.mostRecentUnproductiveActivity && (
+              <div className="mb-4">
+                <div className="text-sm text-gray-800 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span>
+                    <span>
+                      {" "}
+                      Latest distraction:
+                      <strong> {screentime.mostRecentUnproductiveActivity.activity}</strong>
+                      {screentime.mostRecentUnproductiveActivity.category &&
+                        ` (${screentime.mostRecentUnproductiveActivity.category})`}
+                    </span>
+                    <span className="ml-2 text-gray-400 text-xs">
+                      {new Date(screentime.mostRecentUnproductiveActivity.timestamp).toLocaleString(
+                        "en-US",
+                        {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        }
+                      )}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between gap-6">
               {/* Weekly Brainrot Time */}
               <div className="text-center flex-1">
                 <div className="text-2xl text-gray-800 font-bold mb-1">
-                  {Math.floor(screentime.unproductiveMinutes)}m
+                  {screentime.unproductiveMinutes
+                    ? `${Math.floor(screentime.unproductiveMinutes / 60)}h ${Math.floor(
+                        screentime.unproductiveMinutes % 60
+                      )}m`
+                    : "0h 0m"}
                 </div>
                 <div className="text-sm text-gray-600 leading-tight">This Week's Brainrot Time</div>
               </div>
@@ -148,45 +199,55 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
             </div>
 
             <div className="text-xs text-gray-500 text-center mt-4">
-              Next image at {screentime.nextThreshold}m
+              Next image at{" "}
+              {screentime.nextThreshold
+                ? `${Math.floor(screentime.nextThreshold / 60)}h ${Math.floor(
+                    screentime.nextThreshold % 60
+                  )}m`
+                : "0h 0m"}
             </div>
-            <div className="text-xs text-gray-500 text-center">
-              Portrait resets every Sunday at midnight EST
-            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-100 text-gray-800 py-12 px-6 flex items-center justify-center gap-3">
+            <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
+            <p className="text-sm text-gray-600">Loading screentime data...</p>
           </div>
         )}
 
         {/* Photo Carousel */}
         {history.length > 0 && (
           <div className="flex justify-center">
-            <Carousel className="w-[calc(100%-30px)]">
+            <Carousel className="w-[calc(100%-30px)]" setApi={setCarouselApi}>
               <CarouselContent className="-ml-2">
-                {history.map((portrait, index) => {
-                  const isSelected = selectedPortrait && selectedPortrait.id === portrait.id;
-                  return (
-                    <CarouselItem key={portrait.id} className="basis-1/3 pl-2">
-                      <div
-                        className={`p-1 cursor-pointer transition-all duration-200 ${
-                          isSelected ? "opacity-100" : "opacity-60 hover:opacity-80"
-                        }`}
-                        onMouseEnter={() => handlePortraitHover(portrait)}
-                        onMouseLeave={handlePortraitLeave}
-                        onClick={() => handlePortraitClick(portrait)}
-                      >
-                        <div className="overflow-hidden rounded-md bg-gray-100">
-                          <img
-                            src={portrait.imageUrl}
-                            alt={`Version ${portrait.version}`}
-                            className="w-full h-full object-cover"
-                          />
+                {history
+                  .slice()
+                  .reverse()
+                  .map((portrait, index) => {
+                    const isSelected = selectedPortrait && selectedPortrait.id === portrait.id;
+                    return (
+                      <CarouselItem key={portrait.id} className="basis-1/3 pl-2">
+                        <div
+                          className={`p-1 cursor-pointer transition-all duration-200 ${
+                            isSelected ? "opacity-100" : "opacity-60 hover:opacity-80"
+                          }`}
+                          onMouseEnter={() => handlePortraitHover(portrait)}
+                          onMouseLeave={handlePortraitLeave}
+                          onClick={() => handlePortraitClick(portrait)}
+                        >
+                          <div className="overflow-hidden rounded-md bg-gray-800">
+                            <img
+                              src={portrait.imageUrl}
+                              alt={`Version ${portrait.version}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    </CarouselItem>
-                  );
-                })}
+                      </CarouselItem>
+                    );
+                  })}
               </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
+              <CarouselPrevious className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700" />
+              <CarouselNext className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700" />
             </Carousel>
           </div>
         )}
@@ -199,21 +260,56 @@ function App() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-8 pt-12">
-      <header className="w-full max-w-6xl text-center mb-10">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Portrait of You</h1>
+    <div className="min-h-screen flex flex-col items-center p-8 pt-16">
+      <header className="w-full max-w-6xl text-center mb-10 animate-[fadeInFromTop_2s_ease-out]">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 text-white">
+          The Picture of You
+        </h1>
         <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-          A living artwork that evolves with your digital habits. Each portrait reflects the hidden
-          cost of unproductive screen time, capturing the slow transformation of identity in the age
-          of distraction.
+          <em>The Picture of You</em> is a series of living artworks that evolve with digital
+          behavior. Each portrait reflects the hidden cost of its owner's unproductive screen time,
+          capturing the slow transformation of identity in the age of distraction. The portraits
+          will reset weekly at midnight EST on Sunday, giving each person a new chance at redefining
+          themselves in an ongoing public installation of self-surveillance.
         </p>
       </header>
 
       {/* stack vertically */}
-      <main className="w-full max-w-6xl flex flex-col gap-12">
-        <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
-        <UserSection user="emily" plaqueName="Emily Zhang" API_BASE_URL={API_BASE_URL} />
+      <main className="w-full max-w-6xl flex flex-col gap-12 flex-grow">
+        <div className="animate-[fadeIn_1.5s_ease-out_0.5s_both]">
+          <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
+        </div>
+        <div className="animate-[fadeIn_1.5s_ease-out_1s_both]">
+          <UserSection user="emily" plaqueName="Emily Zhang" API_BASE_URL={API_BASE_URL} />
+        </div>
       </main>
+
+      <footer
+        className="w-full max-w-6xl mt-12 mb-4 text-center gap-2 flex flex-col"
+        style={{ color: "#ababab" }}
+      >
+        <p className="text-sm text-gray-400">
+          Interested in adding your own portrait to this gallery? Reach out here.
+        </p>
+        <p className="text-sm text-gray-400">
+          {" "}
+          Made by{" "}
+          <a
+            href="https://x.com/thatsnotoptimal"
+            className="text-white relative inline-block transition-colors duration-300 after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:left-0 after:bottom-0 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100"
+          >
+            Justin Guo
+          </a>{" "}
+          and{" "}
+          <a
+            href="https://x.com/emilyzsh"
+            className="text-white relative inline-block transition-colors duration-300 after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:left-0 after:bottom-0 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100"
+          >
+            Emily Zhang
+          </a>
+          .
+        </p>
+      </footer>
     </div>
   );
 }

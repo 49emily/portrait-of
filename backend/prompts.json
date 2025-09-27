@@ -5,7 +5,7 @@
     "Canvas warps slightly, creating subtle ripples and sagging.",
     "Tiny paint flakes begin to peel and fall from the canvas.",
     "Moisture stains or dark spots creep into the corners of the painting.",
-    "Varnish yellows, creating a warm, amber tint over the image.",
+    "Varnish yellows, creating a warm, amber tint over the painting.",
     "A small tear forms at the canvas’s edge, widening subtly.",
     "Paint bleeds slightly, with colors seeping beyond their original lines.",
     "Fine spiderweb cracks spread across high-contrast areas of the paint.",
@@ -20,23 +20,19 @@
     "Humidity warps the wood frame, twisting it subtly out of shape.",
     "Ornate frame carvings lose their sharpness, worn smooth with age.",
     "Gold leaf chips off the frame, exposing raw wood beneath.",
-    "Corners of the frame split apart, leaving visible gaps.",
     "Frame joints sag slightly, making the painting tilt."
   ],
   "wall": [
     "Cobwebs slowly appear in the corners of the frame and nearby wall.",
     "Plaster cracks crawl outward from where the painting hangs.",
-    "Nails or hanging wires rust, staining the wall behind.",
+    "Rust stains the wall behind.",
     "Mold specks appear in the gallery corners or on the wall behind the piece.",
     "Plaster behind the piece crumbles, leaving hairline fissures spreading outward.",
-    "Dampness discolors the wall, creating patches of darker tone.",
-    "Wallpaper near the frame curls away, edges lifting.",
-    "Nails rust, bleeding thin orange streaks down the wall."
+    "Dampness discolors the wall, creating patches of darker tone."
   ],
   "atmosphere": [
     "Insects or moths briefly flutter near or land on the painting.",
-    "Plaque below the painting corrodes or becomes illegible.",
-    "Air looks heavy with suspended dust, catching the projector beam of light.",
+    "Air looks heavy with suspended dust.",
     "A faint draft stirs the dust, unsettling the stillness of the gallery."
   ]
 }

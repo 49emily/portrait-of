@@ -38,7 +38,7 @@ const MODEL = "gemini-2.5-flash-image-preview";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const FIRST_RUN_PROMPT =
-  "Render this photograph as a realistic oil portrait in a golden frame like a painting in an art museum exhibit. Preserve the subject's exact likeness and the original composition of the photo.";
+  "Show this photograph as an oil portrait in a golden frame hanging in a gallery against a dark wall. Make it well-lit and bright. Make the portrait resemble the image closely.";
 
 const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
 
@@ -228,7 +228,9 @@ async function main() {
   }
 
   const effect = pickPrompt(prompts, { runs: [] }, 3);
-  const fullPrompt = firstRun ? FIRST_RUN_PROMPT : effect;
+  const stabilizePrompt =
+    "Do not make the painting smaller in the output. Try to retain facial features and details.";
+  const fullPrompt = firstRun ? FIRST_RUN_PROMPT : `${effect} ${stabilizePrompt}`;
 
   console.log(`[config] model=${MODEL}`);
   console.log(`[run] user=${user} firstRun=${firstRun} usedBase=${usedBase} reason=${sel.reason}`);

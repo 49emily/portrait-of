@@ -102,6 +102,24 @@ function calculateUnproductiveMinutes(rows) {
   return unproductiveSeconds / 60;
 }
 
+function getMostRecentUnproductiveActivity(rows) {
+  const unproductiveRows = rows
+    .filter((row) => row[5] < 0)
+    .sort((a, b) => new Date(b[0]) - new Date(a[0])); // Sort by timestamp descending
+
+  if (unproductiveRows.length === 0) {
+    return null;
+  }
+
+  const mostRecent = unproductiveRows[0];
+  return {
+    timestamp: mostRecent[0],
+    activity: mostRecent[3],
+    category: mostRecent[4],
+    timeMinutes: Math.round(((mostRecent[1] || 0) / 60) * 100) / 100,
+  };
+}
+
 function getStartDateFromEnv() {
   const startDateStr = process.env.TOTAL_START_DATE;
   if (!startDateStr) {
@@ -161,6 +179,7 @@ app.get("/api/:user/current-screentime", async (req, res) => {
     // Fetch weekly data
     const weeklyRows = await fetchRescueTimeDataForUser(user, weekStartMidnight, nowEastern);
     const unproductiveMinutes = calculateUnproductiveMinutes(weeklyRows);
+    const mostRecentUnproductiveActivity = getMostRecentUnproductiveActivity(weeklyRows);
 
     // Fetch total data from start date
     const totalRows = await fetchRescueTimeDataForUser(user, startDate, nowEastern);
@@ -175,6 +194,7 @@ app.get("/api/:user/current-screentime", async (req, res) => {
       user,
       unproductiveMinutes: Math.round(unproductiveMinutes * 100) / 100,
       totalUnproductiveMinutes: Math.round(totalUnproductiveMinutes * 100) / 100,
+      mostRecentUnproductiveActivity,
       expectedImageCount,
       nextThreshold: expectedImageCount * UNPRODUCTIVE_THRESHOLD_INCREMENT,
       timestamp: nowEastern.toISOString(),

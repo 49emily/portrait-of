@@ -4,6 +4,35 @@
 /* Global styles that can't be easily replaced with Tailwind utilities */
 body {
   background-color: #1a1a1a;
-  color: #f0f0f0;
   font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+}
+
+/* Custom animations */
+@keyframes fadeInFromTop {
+  0% {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
