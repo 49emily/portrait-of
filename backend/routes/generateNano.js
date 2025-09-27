@@ -260,7 +260,12 @@ async function main() {
     isJustin: isJustin,
   };
 
-  const supabaseResult = await uploadImageToSupabase(imageBase64, user, fullPrompt, metadata);
+  const supabaseResult = await uploadImageToSupabase(
+    imageBase64,
+    user,
+    firstRun ? FIRST_RUN_PROMPT : effect,
+    metadata
+  );
 
   const dt = ((Date.now() - t0) / 1000).toFixed(2);
   console.log(
