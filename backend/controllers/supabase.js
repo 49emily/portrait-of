@@ -21,8 +21,10 @@ export function resolveUser(user) {
 export const getTodayImageCount = async (isJustinFlag) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Get today's date in Eastern time
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const today = new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
   const todayISO = today.toISOString();
 
   const { data, error } = await supabase
@@ -99,8 +101,10 @@ export const getPortraitHistory = async (isJustinFlag) => {
 export const getLatestImageToday = async (isJustinFlag) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Get today's date in Eastern time
+  const now = new Date();
+  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const today = new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
   const todayISO = today.toISOString();
 
   const { data, error } = await supabase
