@@ -1,0 +1,24 @@
+{
+  "functions": {
+    "api/cron.js": {
+      "maxDuration": 300
+    },
+    "api/index.js": {
+      "maxDuration": 30
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "*/1 * * * *"
+    }
+  ],
+  "env": {
+    "GEMINI_API_KEY": "@gemini-api-key",
+    "RESCUETIME_API_KEY_JUSTIN": "@rescuetime-api-key-justin",
+    "RESCUETIME_API_KEY_EMILY": "@rescuetime-api-key-emily",
+    "CRON_SECRET": "@cron-secret",
+    "SUPABASE_URL": "@supabase-url",
+    "SUPABASE_ANON_KEY": "@supabase-anon-key"
+  }
+}

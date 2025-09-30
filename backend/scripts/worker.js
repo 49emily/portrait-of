@@ -7,7 +7,7 @@ function runUser(user) {
     const proc = spawn(
       "node",
       [
-        "routes/generateNano.js",
+        "lib/generateNano.js",
         `--user=${user}`,
         `--reset=${process.env.RESET_MODE || "never"}`,
       ],

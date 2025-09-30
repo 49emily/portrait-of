@@ -1,14 +1,14 @@
-// server.js
+// backend/api/index.js
 
 // Load environment variables first
-import "./config.js";
+import "../config.js";
 
 import express from "express";
 import cors from "cors";
 import path from "path";
 import fs from "node:fs";
 import { fileURLToPath } from "url";
-import { resolveUser, getPortraitHistory } from "./controllers/supabase.js";
+import { resolveUser, getPortraitHistory } from "../controllers/supabase.js";
 import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);

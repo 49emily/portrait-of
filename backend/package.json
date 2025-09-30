@@ -2,11 +2,14 @@
   "name": "dorian-backend",
   "version": "1.0.0",
   "description": "Node.js backend for fetching RescueTime activity data",
-  "main": "server.js",
+  "main": "api/index.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node api/index.js",
+    "dev": "nodemon api/index.js",
+    "test-cron": "node scripts/test-cron.js",
+    "worker": "node scripts/worker.js",
+    "log-activity": "node scripts/log-activity.js"
   },
   "dependencies": {
     "@google/genai": "^1.19.0",
