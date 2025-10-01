@@ -1,5 +1,5 @@
 // src/App.jsx
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import "./App.css";
 import {
   Carousel,
@@ -8,6 +8,138 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from "@/components/ui/carousel";
+// eslint-disable-next-line no-unused-vars
+import { motion, useScroll, useTransform } from "framer-motion";
+
+function VideoSection({ API_BASE_URL }) {
+  const [videos, setVideos] = useState({});
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
+  // Calculate the transform needed to show all content
+  const [transformRange, setTransformRange] = useState(["0%", "-35%"]);
+
+  useEffect(() => {
+    const calculateTransform = () => {
+      if (containerRef.current) {
+        const container = containerRef.current.querySelector(".sticky");
+        const content = containerRef.current.querySelector("[data-content]");
+
+        if (container && content) {
+          const containerWidth = container.offsetWidth;
+          const contentWidth = content.scrollWidth;
+          const maxTransform = -((contentWidth - containerWidth) / contentWidth) * 100;
+          setTransformRange(["0%", `${Math.min(maxTransform, -10)}%`]);
+        }
+      }
+    };
+
+    calculateTransform();
+    window.addEventListener("resize", calculateTransform);
+
+    return () => window.removeEventListener("resize", calculateTransform);
+  }, [videos]);
+
+  const x = useTransform(scrollYProgress, [0, 1], transformRange);
+
+  const fetchVideos = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/videos`);
+      if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+      const data = await res.json();
+      if (data.success) {
+        setVideos(data.videos);
+      }
+    } catch (err) {
+      console.error("Error fetching videos:", err);
+    }
+  }, [API_BASE_URL]);
+
+  useEffect(() => {
+    fetchVideos();
+  }, [fetchVideos]);
+
+  const VideoPlaceholder = ({ week, user }) => (
+    <div className="w-64 aspect-[9/16] bg-transparent border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
+      <div className="text-center text-gray-400">
+        <div className="text-sm">Week {week}</div>
+        <div className="text-xs capitalize">{user}</div>
+        <div className="text-xs mt-1">No video yet</div>
+      </div>
+    </div>
+  );
+
+  const VideoPlayer = ({ video }) => (
+    <div className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0">
+      <video
+        src={video.videoUrl}
+        controls
+        className="w-full h-full object-cover"
+        preload="metadata"
+      >
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  );
+
+  // if (isLoading) {
+  //   return (
+  //     <div className="h-screen flex items-center justify-center">
+  //       <div className="text-center p-8 flex flex-col items-center gap-4">
+  //         <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
+  //         <p className="text-white">Loading videos...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  // if (error) {
+  //   return (
+  //     <div className="h-screen flex items-center justify-center">
+  //       <div className="text-center p-8">
+  //         <p className="text-red-500">Error loading videos: {error}</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+
+  return (
+    <div ref={containerRef} className="h-[200vh] relative w-full">
+      <div className="sticky top-0 h-[100vh] flex items-center overflow-hidden w-full">
+        <h2 className="absolute top-20 left-1/2 transform -translate-x-1/2 text-3xl font-bold text-white z-10">
+          History
+        </h2>
+        <motion.div style={{ x }} className="flex gap-8" data-content>
+          {[1, 2, 3, 4].map((week) => (
+            <div key={week} className="flex-shrink-0 space-y-4">
+              <div className="text-lg text-gray-300 text-center font-medium">Week {week}</div>
+              <div className="flex gap-4">
+                {/* Justin's video */}
+                <div className="space-y-2">
+                  {videos[week]?.justin ? (
+                    <VideoPlayer video={videos[week].justin} />
+                  ) : (
+                    <VideoPlaceholder week={week} user="justin" />
+                  )}
+                </div>
+                {/* Emily's video */}
+                <div className="space-y-2">
+                  {videos[week]?.emily ? (
+                    <VideoPlayer video={videos[week].emily} />
+                  ) : (
+                    <VideoPlaceholder week={week} user="emily" />
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  );
+}
 
 function UserSection({ user, plaqueName, API_BASE_URL }) {
   const [history, setHistory] = useState([]);
@@ -301,13 +433,17 @@ function App() {
           Portrait of You
         </h1>
         <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-          <em>Portrait of You</em> is a series of living artworks that evolve with digital behavior.
-          Each portrait reflects the hidden cost of its owner's unproductive screen time, capturing
-          the slow transformation of identity in the age of distraction. The portraits will reset
-          weekly at midnight EST on Sunday, giving each person a new chance at redefining themselves
-          in an ongoing public installation of self-surveillance.
+          <em>Portrait of You</em> is a series of generative living artworks that evolve with
+          digital behavior. Each portrait undergoes a transformation using a generative AI model at
+          every increment of its owner's unproductive screen time, capturing the gradual erosion of
+          identity in the age of distraction. The portraits will reset weekly at midnight EST on
+          Sunday, giving each person a new chance at redefining themselves in an ongoing public
+          installation of self-surveillance.
         </p>
       </header>
+
+      {/* Video Section */}
+      <VideoSection API_BASE_URL={API_BASE_URL} />
 
       {/* stack vertically */}
       <main className="w-full max-w-6xl flex flex-col gap-12 flex-grow">
@@ -324,7 +460,14 @@ function App() {
         style={{ color: "#ababab" }}
       >
         <p className="text-sm text-gray-400">
-          Interested in adding your own portrait to this gallery? Reach out here.
+          Interested in adding your own portrait to this gallery? Reach out{" "}
+          <a
+            href="mailto:emily49@stanford.edu"
+            className="text-white relative inline-block transition-colors duration-300 after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:left-0 after:bottom-0 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100"
+          >
+            here
+          </a>
+          .
         </p>
         <p className="text-sm text-gray-400">
           {" "}

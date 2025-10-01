@@ -8,7 +8,7 @@ import cors from "cors";
 import path from "path";
 import fs from "node:fs";
 import { fileURLToPath } from "url";
-import { resolveUser, getPortraitHistory } from "../controllers/supabase.js";
+import { resolveUser, getPortraitHistory, getVideosForWeeks } from "../controllers/supabase.js";
 import axios from "axios";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -162,6 +162,21 @@ app.get("/api/:user/portrait-history", async (req, res) => {
     res.status(400).json({
       success: false,
       error: "Failed to fetch portrait history.",
+      message: error.message,
+    });
+  }
+});
+
+// --- Videos route ---
+app.get("/api/videos", async (req, res) => {
+  try {
+    const videos = await getVideosForWeeks();
+    res.json({ success: true, videos });
+  } catch (error) {
+    console.error("Error fetching videos:", error);
+    res.status(400).json({
+      success: false,
+      error: "Failed to fetch videos.",
       message: error.message,
     });
   }

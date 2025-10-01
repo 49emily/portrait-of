@@ -149,6 +149,38 @@ export const getLatestImageAnyDay = async (isJustinFlag) => {
   return Buffer.from(arrayBuffer).toString("base64");
 };
 
+export const getVideosForWeeks = async () => {
+  if (!supabase) throw new Error("Supabase not configured.");
+
+  const { data, error } = await supabase
+    .from("videos")
+    .select("id, week, is_justin, file_name")
+    .in("week", [1, 2, 3, 4])
+    .order("week", { ascending: true });
+
+  if (error) throw error;
+
+  // Group videos by week and user
+  const videosByWeek = {};
+  for (let week = 1; week <= 4; week++) {
+    videosByWeek[week] = {
+      justin: null,
+      emily: null
+    };
+  }
+
+  data.forEach((video) => {
+    const userKey = video.is_justin ? 'justin' : 'emily';
+    videosByWeek[video.week][userKey] = {
+      id: video.id,
+      file_name: video.file_name,
+      videoUrl: supabase.storage.from("videos").getPublicUrl(video.file_name).data.publicUrl,
+    };
+  });
+
+  return videosByWeek;
+};
+
 export const uploadImageToSupabase = async (imageBase64, user_id, prompt, metadata = {}) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
