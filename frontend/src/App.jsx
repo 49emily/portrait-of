@@ -428,7 +428,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8 pt-16">
-      <header className="w-full max-w-6xl text-center mb-10 animate-[fadeInFromTop_2s_ease-out]">
+      <header className="w-full max-w-6xl text-center animate-[fadeInFromTop_2s_ease-out]">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 text-white">
           Portrait of You
         </h1>

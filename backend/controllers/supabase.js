@@ -165,12 +165,12 @@ export const getVideosForWeeks = async () => {
   for (let week = 1; week <= 4; week++) {
     videosByWeek[week] = {
       justin: null,
-      emily: null
+      emily: null,
     };
   }
 
   data.forEach((video) => {
-    const userKey = video.is_justin ? 'justin' : 'emily';
+    const userKey = video.is_justin ? "justin" : "emily";
     videosByWeek[video.week][userKey] = {
       id: video.id,
       file_name: video.file_name,
