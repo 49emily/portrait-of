@@ -141,3 +141,4 @@ Function timeouts are configured in `vercel.json`:
 - Check Vercel function logs in dashboard
 - Use `console.log` statements for debugging
 - Test locally with `npm run test-cron`
+

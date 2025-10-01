@@ -18,6 +18,38 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   const [selectedPortrait, setSelectedPortrait] = useState(null);
   const [carouselApi, setCarouselApi] = useState(null);
 
+  // Project start date - adjust this as needed
+  const PROJECT_START_DATE = new Date("2025-09-21T04:00:00.000Z");
+
+  // Function to calculate week number based on Sunday midnight America/New_York timezone cutoff
+  const calculateWeekNumber = (imageTimestamp) => {
+    const imageDate = new Date(imageTimestamp);
+
+    // Convert dates to America/New_York timezone
+    const imageNY = new Date(imageDate.toLocaleString("en-US", { timeZone: "America/New_York" }));
+    const startNY = new Date(
+      PROJECT_START_DATE.toLocaleString("en-US", { timeZone: "America/New_York" })
+    );
+
+    // Find the Sunday midnight before or on the image date
+    const imageDayOfWeek = imageNY.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const imageSunday = new Date(imageNY);
+    imageSunday.setDate(imageSunday.getDate() - imageDayOfWeek);
+    imageSunday.setHours(0, 0, 0, 0); // Set to midnight
+
+    // Find the Sunday midnight before or on the start date
+    const startDayOfWeek = startNY.getDay();
+    const startSunday = new Date(startNY);
+    startSunday.setDate(startSunday.getDate() - startDayOfWeek);
+    startSunday.setHours(0, 0, 0, 0); // Set to midnight
+
+    // Calculate the difference in weeks
+    const timeDiff = imageSunday.getTime() - startSunday.getTime();
+    const weeksDiff = Math.floor(timeDiff / (7 * 24 * 60 * 60 * 1000));
+
+    return weeksDiff + 1; // Week numbers start at 1
+  };
+
   const HISTORY_URL = `${API_BASE_URL}/api/${user}/portrait-history`;
   const SCREEN_URL = `${API_BASE_URL}/api/${user}/current-screentime`;
 
@@ -222,7 +254,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                 {history
                   .slice()
                   .reverse()
-                  .map((portrait, index) => {
+                  .map((portrait) => {
                     const isSelected = selectedPortrait && selectedPortrait.id === portrait.id;
                     return (
                       <CarouselItem key={portrait.id} className="basis-1/3 pl-2">
@@ -234,12 +266,15 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                           onMouseLeave={handlePortraitLeave}
                           onClick={() => handlePortraitClick(portrait)}
                         >
-                          <div className="overflow-hidden rounded-md bg-gray-800">
+                          <div className="relative overflow-hidden rounded-md bg-gray-800">
                             <img
                               src={portrait.imageUrl}
                               alt={`Version ${portrait.version}`}
                               className="w-full h-full object-cover"
                             />
+                            <div className="absolute top-1 left-1 bg-black/40 text-white text-xs px-2 py-1 rounded">
+                              <i>Week {calculateWeekNumber(portrait.timestamp)}</i>
+                            </div>
                           </div>
                         </div>
                       </CarouselItem>

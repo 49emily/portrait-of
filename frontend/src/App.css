@@ -3,7 +3,7 @@
 
 /* Global styles that can't be easily replaced with Tailwind utilities */
 body {
-  background-color: #1a1a1a;
+  background-color: rgb(0, 0, 0);
   font-family: "Helvetica Neue", "Helvetica", "Arial", sans-serif;
 }
 
