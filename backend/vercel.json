@@ -14,11 +14,11 @@
     }
   ],
   "env": {
-    "GEMINI_API_KEY": "@gemini-api-key",
-    "RESCUETIME_API_KEY_JUSTIN": "@rescuetime-api-key-justin",
-    "RESCUETIME_API_KEY_EMILY": "@rescuetime-api-key-emily",
-    "CRON_SECRET": "@cron-secret",
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_ANON_KEY": "@supabase-anon-key"
+    "GEMINI_API_KEY": "GEMINI_API_KEY",
+    "RESCUETIME_API_KEY_JUSTIN": "RESCUETIME_API_KEY_JUSTIN",
+    "RESCUETIME_API_KEY_EMILY": "RESCUETIME_API_KEY_EMILY",
+    "CRON_SECRET": "CRON_SECRET",
+    "SUPABASE_URL": "SUPABASE_URL",
+    "SUPABASE_ANON_KEY": "SUPABASE_ANON_KEY"
   }
 }
