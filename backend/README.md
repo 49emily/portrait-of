@@ -76,7 +76,7 @@ In Vercel dashboard, add these environment variables:
 - `RESCUETIME_API_KEY_JUSTIN`
 - `RESCUETIME_API_KEY_EMILY`
 - `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 - `CRON_SECRET` (generate with `openssl rand -hex 32`)
 
 ## API Endpoints
@@ -141,4 +141,3 @@ Function timeouts are configured in `vercel.json`:
 - Check Vercel function logs in dashboard
 - Use `console.log` statements for debugging
 - Test locally with `npm run test-cron`
-
