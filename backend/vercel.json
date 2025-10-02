@@ -12,13 +12,5 @@
       "path": "/api/cron",
       "schedule": "*/1 * * * *"
     }
-  ],
-  "env": {
-    "GEMINI_API_KEY": "GEMINI_API_KEY",
-    "RESCUETIME_API_KEY_JUSTIN": "RESCUETIME_API_KEY_JUSTIN",
-    "RESCUETIME_API_KEY_EMILY": "RESCUETIME_API_KEY_EMILY",
-    "CRON_SECRET": "CRON_SECRET",
-    "SUPABASE_URL": "SUPABASE_URL",
-    "SUPABASE_SERVICE_ROLE_KEY": "SUPABASE_SERVICE_ROLE_KEY"
-  }
+  ]
 }
