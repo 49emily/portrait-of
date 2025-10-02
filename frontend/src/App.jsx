@@ -22,7 +22,7 @@ const VideoPlayer = ({ video }) =>
           loop
           playsInline
           className="w-full h-full object-cover"
-          preload="metadata"
+          preload="none"
         >
           Your browser does not support the video tag.
         </video>
@@ -437,7 +437,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                         >
                           <div className="relative overflow-hidden rounded-md bg-gray-800">
                             <img
-                              src={portrait.imageUrl}
+                              src={portrait.thumbnailUrl || portrait.imageUrl}
                               alt={`Version ${portrait.version}`}
                               className="w-full h-full object-cover"
                             />
@@ -481,10 +481,10 @@ function App() {
 
       {/* stack vertically */}
       <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow py-16">
-        <div className="animate-[fadeIn_1.5s_ease-out_0.5s_both]">
+        <div className="animate-[fadeIn_2s_ease-out_0.5s_both]">
           <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
         </div>
-        <div className="animate-[fadeIn_1.5s_ease-out_1s_both]">
+        <div className="animate-[fadeIn_2s_ease-out_1s_both]">
           <UserSection user="emily" plaqueName="Emily Zhang" API_BASE_URL={API_BASE_URL} />
         </div>
       </main>

@@ -85,19 +85,38 @@ export const getPortraitHistory = async (isJustinFlag) => {
 
   if (error) throw error;
 
-  return data.map((record) => ({
-    id: record.id, // global PK (don’t show on UI)
-    version: record.version ?? record.id, // UI should use this
-    prompt: record.prompt,
-    file_name: record.file_name,
-    model_version: record.model_version,
-    response_id: record.response_id,
-    used_base: record.used_base,
-    note: record.note,
-    is_justin: record.is_justin,
-    timestamp: record.created_at,
-    imageUrl: supabase.storage.from("images").getPublicUrl(record.file_name).data.publicUrl,
-  }));
+  return data.map((record) => {
+    const originalUrl = supabase.storage.from("images").getPublicUrl(record.file_name)
+      .data.publicUrl;
+
+    const imageUrl = supabase.storage.from("images").getPublicUrl(record.file_name, {
+      transform: {
+        quality: 60,
+      },
+    }).data.publicUrl;
+
+    const thumbnailUrl = supabase.storage.from("images").getPublicUrl(record.file_name, {
+      transform: {
+        quality: 20,
+      },
+    }).data.publicUrl;
+
+    return {
+      id: record.id, // global PK (don't show on UI)
+      version: record.version ?? record.id, // UI should use this
+      prompt: record.prompt,
+      file_name: record.file_name,
+      model_version: record.model_version,
+      response_id: record.response_id,
+      used_base: record.used_base,
+      note: record.note,
+      is_justin: record.is_justin,
+      timestamp: record.created_at,
+      imageUrl,
+      thumbnailUrl,
+      originalUrl,
+    };
+  });
 };
 
 export const getLatestImageToday = async (isJustinFlag) => {
