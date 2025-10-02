@@ -460,29 +460,162 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   );
 }
 
+// Component to display the most recent videos
+function RecentVideos({ API_BASE_URL }) {
+  const [videos, setVideos] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/videos`);
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+        const data = await res.json();
+        if (data.success) {
+          setVideos(data.videos);
+        }
+      } catch (err) {
+        console.error("Error fetching videos:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, [API_BASE_URL]);
+
+  // Get the most recent videos for both users
+  const getMostRecentVideos = () => {
+    const weeks = Object.keys(videos)
+      .map(Number)
+      .sort((a, b) => b - a);
+
+    for (const week of weeks) {
+      if (videos[week]?.justin && videos[week]?.emily) {
+        return {
+          justin: videos[week].justin,
+          emily: videos[week].emily,
+          week,
+        };
+      }
+    }
+    return null;
+  };
+
+  const recentVideos = getMostRecentVideos();
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex gap-4">
+          <div className="w-36 md:w-64 aspect-[9/16] bg-gray-800 rounded-lg animate-pulse"></div>
+          <div className="w-36 md:w-64 aspect-[9/16] bg-gray-800 rounded-lg animate-pulse"></div>
+        </div>
+        <p className="text-sm text-gray-400 text-center italic">
+          Last week's (de)generative video replay
+        </p>
+      </div>
+    );
+  }
+
+  if (!recentVideos) {
+    return (
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex gap-4">
+          <div className="w-36 md:w-64 aspect-[9/16] bg-transparent border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center">
+            <div className="text-center text-gray-400 px-2">
+              <div className="text-xs">No videos yet</div>
+            </div>
+          </div>
+          <div className="w-36 md:w-64 aspect-[9/16] bg-transparent border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center">
+            <div className="text-center text-gray-400 px-2">
+              <div className="text-xs">No videos yet</div>
+            </div>
+          </div>
+        </div>
+        <p className="text-sm text-gray-400 text-center italic">
+          Last week's (de)generative video replay
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-3">
+      <div className="flex gap-4">
+        <div className="w-36 md:w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black shadow-lg">
+          <video
+            src={recentVideos.justin.videoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+            preload="none"
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div className="w-36 md:w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black shadow-lg">
+          <video
+            src={recentVideos.emily.videoUrl}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+            preload="none"
+          >
+            Your browser does not support the video tag.
+          </video>
+        </div>
+      </div>
+      <p className="text-sm text-gray-400 text-center italic">
+        Last week's (de)generative video replay
+      </p>
+    </div>
+  );
+}
+
 function App() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
-      <header className="w-full max-w-6xl text-center animate-[fadeInFromTop_2s_ease-out] py-16">
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 text-white">
+      <header className="w-full max-w-6xl animate-[fadeInFromTop_2s_ease-out] py-16">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white text-center mb-4">
           Portrait of You
         </h1>
-        <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-          <em>Portrait of You</em> is a series of generative living artworks that evolve with
-          digital behavior inspired by Oscar Wilde's <em>The Picture of Dorian Gray</em>. Each
-          portrait undergoes a transformation using a generative AI model at every increment of its
-          owner's unproductive screen time, capturing the gradual erosion of identity in the age of
-          distraction. The portraits will reset weekly at midnight EST on Sunday, giving each person
-          a new chance at redefining themselves in an ongoing public installation of
-          self-surveillance.
-        </p>
+        <h2 className="text-xl md:text-2xl tracking-tight mb-16 text-white text-center">
+          Justin Guo and Emily Zhang
+        </h2>
+        <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8 lg:gap-16">
+          {/* Left side: Recent Videos */}
+          <div className="flex-shrink-0 order-2 lg:order-1">
+            <RecentVideos API_BASE_URL={API_BASE_URL} />
+          </div>
+
+          {/* Right side: Description Text */}
+          <div className="flex-1 order-1 lg:order-2">
+            <p className="text-lg text-gray-300 max-w-4xl lg:text-left text-center leading-relaxed">
+              <em>Portrait of You</em> is a series of generative living artworks that evolve with
+              digital behavior inspired by Oscar Wilde's <em>The Picture of Dorian Gray</em>. Each
+              portrait undergoes a transformation using a generative AI model at every increment of
+              its owner's unproductive screen time, capturing the gradual erosion of identity in the
+              age of distraction. The portraits will reset weekly at midnight EST on Sunday, giving
+              each person a new chance at redefining themselves in an ongoing public installation of
+              self-surveillance.
+            </p>
+          </div>
+        </div>
       </header>
 
       {/* stack vertically */}
       <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow py-16">
         <div className="animate-[fadeIn_2s_ease-out_0.5s_both]">
+          <h2 className="text-3xl font-bold tracking-tight mb-16 text-white text-center">
+            Live Portraits
+          </h2>
           <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
         </div>
         <div className="animate-[fadeIn_2s_ease-out_1s_both]">
