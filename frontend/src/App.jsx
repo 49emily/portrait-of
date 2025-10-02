@@ -634,6 +634,8 @@ function App() {
           Interested in adding your own portrait to this gallery? Reach out{" "}
           <a
             href="mailto:emily49@stanford.edu"
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-white relative inline-block transition-colors duration-300 after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:left-0 after:bottom-0 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100"
           >
             here
