@@ -17,7 +17,19 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+// Configure CORS to allow requests from the frontend domain
+app.use(
+  cors({
+    origin: [
+      "https://www.portraitofyou.space",
+      "http://localhost:5173", // For local development
+      "http://localhost:3000", // For local development
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 // ---- User map to pick the right RescueTime API key ----
