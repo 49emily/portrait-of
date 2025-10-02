@@ -21,6 +21,28 @@ function VideoSection({ API_BASE_URL }) {
   // Calculate the transform needed to show all content
   const [transformRange, setTransformRange] = useState(["0%", "-35%"]);
 
+  // Project start date - same as in UserSection
+  const PROJECT_START_DATE = new Date("2025-09-21T04:00:00.000Z");
+
+  // Function to calculate the Sunday of a given week number
+  const getSundayOfWeek = (weekNumber) => {
+    const startNY = new Date(
+      PROJECT_START_DATE.toLocaleString("en-US", { timeZone: "America/New_York" })
+    );
+
+    // Find the Sunday midnight before or on the start date
+    const startDayOfWeek = startNY.getDay();
+    const startSunday = new Date(startNY);
+    startSunday.setDate(startSunday.getDate() - startDayOfWeek);
+    startSunday.setHours(0, 0, 0, 0);
+
+    // Calculate the target Sunday
+    const targetSunday = new Date(startSunday);
+    targetSunday.setDate(startSunday.getDate() + (weekNumber - 1) * 7);
+
+    return targetSunday;
+  };
+
   useEffect(() => {
     const calculateTransform = () => {
       if (containerRef.current) {
@@ -61,15 +83,23 @@ function VideoSection({ API_BASE_URL }) {
     fetchVideos();
   }, [fetchVideos]);
 
-  const VideoPlaceholder = ({ week, user }) => (
-    <div className="w-64 aspect-[9/16] bg-transparent border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
-      <div className="text-center text-gray-400">
-        <div className="text-sm">Week {week}</div>
-        <div className="text-xs capitalize">{user}</div>
-        <div className="text-xs mt-1">No video yet</div>
+  const VideoPlaceholder = ({ week, user }) => {
+    const sundayDate = getSundayOfWeek(week + 1);
+    const formattedDate = sundayDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    });
+
+    return (
+      <div className="w-64 aspect-[9/16] bg-transparent border-2 border-dashed border-gray-400 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="text-center text-gray-400 px-4">
+          <div className="text-sm">Week {week} Replay</div>
+          <div className="text-xs capitalize">{user}</div>
+          <div className="text-xs">Will be generated on {formattedDate}</div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const VideoPlayer = ({ video }) => (
     <div className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0">
@@ -111,7 +141,7 @@ function VideoSection({ API_BASE_URL }) {
         <h2 className="absolute top-20 left-1/2 transform -translate-x-1/2 text-3xl font-bold text-white z-10">
           History
         </h2>
-        <motion.div style={{ x }} className="flex gap-8" data-content>
+        <motion.div style={{ x }} className="flex gap-8 lg:px-20" data-content>
           {[1, 2, 3, 4].map((week) => (
             <div key={week} className="flex-shrink-0 space-y-4">
               <div className="text-lg text-gray-300 text-center font-medium">Week {week}</div>
@@ -253,7 +283,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-center items-start gap-10 py-8 w-full">
+    <div className="flex flex-col md:flex-row justify-center items-start gap-10 w-full">
       {/* Portrait image */}
       <div className="frame flex-shrink-0">
         {isLoading ? (
@@ -446,7 +476,7 @@ function App() {
       <VideoSection API_BASE_URL={API_BASE_URL} />
 
       {/* stack vertically */}
-      <main className="w-full max-w-6xl flex flex-col gap-12 flex-grow">
+      <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow">
         <div className="animate-[fadeIn_1.5s_ease-out_0.5s_both]">
           <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
         </div>
@@ -456,7 +486,7 @@ function App() {
       </main>
 
       <footer
-        className="w-full max-w-6xl mt-12 mb-4 text-center gap-2 flex flex-col"
+        className="w-full max-w-6xl mt-30 mb-4 text-center gap-2 flex flex-col"
         style={{ color: "#ababab" }}
       >
         <p className="text-sm text-gray-400">
