@@ -459,8 +459,8 @@ function App() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
   return (
-    <div className="min-h-screen flex flex-col items-center p-8 pt-16">
-      <header className="w-full max-w-6xl text-center animate-[fadeInFromTop_2s_ease-out]">
+    <div className="min-h-screen flex flex-col items-center p-8">
+      <header className="w-full max-w-6xl text-center animate-[fadeInFromTop_2s_ease-out] py-20">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 text-white">
           Portrait of You
         </h1>
@@ -474,11 +474,8 @@ function App() {
         </p>
       </header>
 
-      {/* Video Section */}
-      <VideoSection API_BASE_URL={API_BASE_URL} />
-
       {/* stack vertically */}
-      <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow">
+      <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow mb-16">
         <div className="animate-[fadeIn_1.5s_ease-out_0.5s_both]">
           <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
         </div>
@@ -487,8 +484,11 @@ function App() {
         </div>
       </main>
 
+      {/* Video Section */}
+      <VideoSection API_BASE_URL={API_BASE_URL} />
+
       <footer
-        className="w-full max-w-6xl mt-30 mb-4 text-center gap-2 flex flex-col"
+        className="w-full max-w-6xl mb-4 text-center gap-2 flex flex-col"
         style={{ color: "#ababab" }}
       >
         <p className="text-sm text-gray-400">
