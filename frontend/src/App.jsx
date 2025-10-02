@@ -465,7 +465,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
-      <header className="w-full max-w-6xl text-center animate-[fadeInFromTop_2s_ease-out] py-20">
+      <header className="w-full max-w-6xl text-center animate-[fadeInFromTop_2s_ease-out] py-16">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-8 text-white">
           Portrait of You
         </h1>
@@ -480,7 +480,7 @@ function App() {
       </header>
 
       {/* stack vertically */}
-      <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow mb-16">
+      <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow py-16">
         <div className="animate-[fadeIn_1.5s_ease-out_0.5s_both]">
           <UserSection user="justin" plaqueName="Justin Guo" API_BASE_URL={API_BASE_URL} />
         </div>
