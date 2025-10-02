@@ -1,12 +1,19 @@
 // backend/api/cron.js - Vercel cron job endpoint
 import "dotenv/config";
 import { spawn } from "node:child_process";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+// Get the directory of this file and resolve the lib path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const libPath = path.resolve(__dirname, "../lib/generateNano.js");
 
 function runUser(user) {
   return new Promise((resolve, reject) => {
     const proc = spawn(
       "node",
-      ["lib/generateNano.js", `--user=${user}`, `--reset=${process.env.RESET_MODE || "never"}`],
+      [libPath, `--user=${user}`, `--reset=${process.env.RESET_MODE || "never"}`],
       {
         cwd: process.cwd(),
         stdio: "pipe", // Changed from "inherit" to capture output
