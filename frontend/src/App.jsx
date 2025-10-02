@@ -470,12 +470,12 @@ function App() {
           Portrait of You
         </h1>
         <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-          <em>Portrait of You</em> is a series of generative living artworks that evolve with
-          digital behavior. Each portrait undergoes a transformation using a generative AI model at
-          every increment of its owner's unproductive screen time, capturing the gradual erosion of
-          identity in the age of distraction. The portraits will reset weekly at midnight EST on
-          Sunday, giving each person a new chance at redefining themselves in an ongoing public
-          installation of self-surveillance.
+          Inspired by <em>The Picture of Dorian Gray</em>, <em>Portrait of You</em> is a series of
+          generative living artworks that evolve with digital behavior. Each portrait undergoes a
+          transformation using a generative AI model at every increment of its owner's unproductive
+          screen time, capturing the gradual erosion of identity in the age of distraction. The
+          portraits will reset weekly at midnight EST on Sunday, giving each person a new chance at
+          redefining themselves in an ongoing public installation of self-surveillance.
         </p>
       </header>
 
