@@ -11,6 +11,26 @@ import {
 // eslint-disable-next-line no-unused-vars
 import { motion, useScroll, useTransform } from "framer-motion";
 
+const VideoPlayer = ({ video }) =>
+  useMemo(
+    () => (
+      <div className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0">
+        <video
+          src={video.videoUrl}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+          preload="metadata"
+        >
+          Your browser does not support the video tag.
+        </video>
+      </div>
+    ),
+    [video.videoUrl]
+  );
+
 function VideoSection({ API_BASE_URL }) {
   const [videos, setVideos] = useState({});
   const containerRef = useRef(null);
@@ -100,27 +120,6 @@ function VideoSection({ API_BASE_URL }) {
       </div>
     );
   };
-
-  const VideoPlayer = ({ video }) =>
-    useMemo(
-      () => (
-        <div className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0">
-          <video
-            src={video.videoUrl}
-            controls
-            autoPlay
-            muted
-            loop
-            playsInline
-            className="w-full h-full object-cover"
-            preload="metadata"
-          >
-            Your browser does not support the video tag.
-          </video>
-        </div>
-      ),
-      [video.videoUrl]
-    );
 
   // if (isLoading) {
   //   return (
