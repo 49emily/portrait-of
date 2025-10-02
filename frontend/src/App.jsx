@@ -105,7 +105,9 @@ function VideoSection({ API_BASE_URL }) {
     <div className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0">
       <video
         src={video.videoUrl}
-        controls
+        autoPlay
+        muted
+        loop
         className="w-full h-full object-cover"
         preload="metadata"
       >
