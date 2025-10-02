@@ -108,6 +108,7 @@ function VideoSection({ API_BASE_URL }) {
         autoPlay
         muted
         loop
+        playsInline
         className="w-full h-full object-cover"
         preload="metadata"
       >
