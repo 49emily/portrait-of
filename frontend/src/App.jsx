@@ -149,7 +149,7 @@ function VideoSection({ API_BASE_URL }) {
           History
         </h2>
         <motion.div style={{ x }} className="flex gap-8 lg:px-20" data-content>
-          {[1, 2, 3, 4].map((week) => (
+          {[1, 2, 3, 4, 5].map((week) => (
             <div key={week} className="flex-shrink-0 space-y-4">
               <div className="text-lg text-gray-300 text-center font-medium">Week {week}</div>
               <div className="flex gap-4">
@@ -470,12 +470,13 @@ function App() {
           Portrait of You
         </h1>
         <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-          Inspired by <em>The Picture of Dorian Gray</em>, <em>Portrait of You</em> is a series of
-          generative living artworks that evolve with digital behavior. Each portrait undergoes a
-          transformation using a generative AI model at every increment of its owner's unproductive
-          screen time, capturing the gradual erosion of identity in the age of distraction. The
-          portraits will reset weekly at midnight EST on Sunday, giving each person a new chance at
-          redefining themselves in an ongoing public installation of self-surveillance.
+          <em>Portrait of You</em> is a series of generative living artworks that evolve with
+          digital behavior inspired by Oscar Wilde's <em>The Picture of Dorian Gray</em>. Each
+          portrait undergoes a transformation using a generative AI model at every increment of its
+          owner's unproductive screen time, capturing the gradual erosion of identity in the age of
+          distraction. The portraits will reset weekly at midnight EST on Sunday, giving each person
+          a new chance at redefining themselves in an ongoing public installation of
+          self-surveillance.
         </p>
       </header>
 

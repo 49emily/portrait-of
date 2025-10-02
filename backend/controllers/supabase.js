@@ -6,8 +6,6 @@ import { decode } from "base64-arraybuffer";
 
 let supabase = null;
 if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.log("supabase_url", process.env.SUPABASE_URL);
-  console.log("supabase_service_role_key", process.env.SUPABASE_SERVICE_ROLE_KEY);
   supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 } else {
   console.warn("⚠️  Supabase service role key not configured. Admin ops disabled.");
@@ -176,7 +174,7 @@ export const getVideosForWeeks = async () => {
   const { data, error } = await supabase
     .from("videos")
     .select("id, week, is_justin, file_name")
-    .in("week", [1, 2, 3, 4])
+    .in("week", [1, 2, 3, 4, 5])
     .order("week", { ascending: true });
 
   if (error) throw error;
