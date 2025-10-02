@@ -102,24 +102,16 @@ function VideoSection({ API_BASE_URL }) {
   };
 
   const VideoPlayer = ({ video }) => (
-    <div
-      className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0"
-      style={{ transform: "translateZ(0)" }}
-    >
+    <div className="w-64 aspect-[9/16] rounded-lg overflow-hidden bg-black flex-shrink-0">
       <video
         src={video.videoUrl}
+        controls
         autoPlay
         muted
         loop
         playsInline
-        webkit-playsinline="true"
         className="w-full h-full object-cover"
         preload="metadata"
-        style={{
-          transform: "translateZ(0)",
-          backfaceVisibility: "hidden",
-          perspective: "1000px",
-        }}
       >
         Your browser does not support the video tag.
       </video>
@@ -153,15 +145,7 @@ function VideoSection({ API_BASE_URL }) {
         <h2 className="absolute top-20 left-1/2 transform -translate-x-1/2 text-3xl font-bold text-white z-10">
           History
         </h2>
-        <motion.div
-          style={{
-            x,
-            transform: "translateZ(0)",
-            willChange: "transform",
-          }}
-          className="flex gap-8 lg:px-20"
-          data-content
-        >
+        <motion.div style={{ x }} className="flex gap-8 lg:px-20" data-content>
           {[1, 2, 3, 4].map((week) => (
             <div key={week} className="flex-shrink-0 space-y-4">
               <div className="text-lg text-gray-300 text-center font-medium">Week {week}</div>
