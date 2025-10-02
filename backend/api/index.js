@@ -239,9 +239,12 @@ app.get("/api/:user/current-screentime", async (req, res) => {
   }
 });
 
-// --- Start Server ---
-app.listen(PORT, () => {
-  console.log(`🚀 API Server running on port ${PORT}`);
-});
-
+// --- Export for Vercel ---
 export default app;
+
+// --- Start Server (for local development only) ---
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 API Server running on port ${PORT}`);
+  });
+}
