@@ -145,7 +145,7 @@ function VideoSection({ API_BASE_URL }) {
   return (
     <div ref={containerRef} className="h-[250vh] relative w-full">
       <div className="sticky top-0 h-[100vh] flex items-center overflow-hidden w-full">
-        <h2 className="absolute top-[10vh] left-1/2 transform -translate-x-1/2 text-3xl font-bold text-white z-10">
+        <h2 className="absolute top-[6vh] left-1/2 transform -translate-x-1/2 text-3xl font-bold text-white z-10">
           History
         </h2>
         <motion.div style={{ x }} className="flex gap-8 lg:px-20" data-content>
