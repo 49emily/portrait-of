@@ -292,7 +292,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   return (
     <div className="flex flex-col md:flex-row justify-center items-start gap-10 w-full">
       {/* Portrait image */}
-      <div className="frame flex-shrink-0">
+      <div className="flex-shrink-0">
         {isLoading ? (
           <div className="text-center p-8 flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-[spin_1s_linear_infinite]"></div>
@@ -304,7 +304,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
           <img
             src={viewedPortrait.imageUrl}
             alt={`Version ${viewedPortrait.version} of ${user}'s portrait`}
-            className="block w-full max-w-sm md:max-w-md lg:max-w-[400px] h-auto"
+            className="block w-full max-w-sm md:max-w-md lg:max-w-[400px] h-auto mx-auto"
           />
         ) : (
           <div className="text-center p-8 border-2 border-dashed text-white rounded-lg">

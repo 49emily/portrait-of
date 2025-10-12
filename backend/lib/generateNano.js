@@ -161,7 +161,7 @@ async function selectInputImage({ isJustin }) {
   }
 
   // Weekly reset logic: reset on Sunday, continue chaining other days
-  const today = new Date();
+  const today = getCurrentTimeInEastern();
   const dow = today.getDay(); // Sun=0...Sat=6
 
   if (dow === WEEKLY_RESET_DAY) {
@@ -228,8 +228,7 @@ async function main() {
   }
 
   const effect = pickPrompt(prompts, { runs: [] }, 3);
-  const stabilizePrompt =
-    "Do not make the painting smaller in the output. Try to retain facial features and details.";
+  const stabilizePrompt = "Do not make the painting smaller in the output.";
   const fullPrompt = firstRun ? FIRST_RUN_PROMPT : `${effect} ${stabilizePrompt}`;
 
   console.log(`[config] model=${MODEL}`);

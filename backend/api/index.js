@@ -210,6 +210,7 @@ app.get("/api/:user/current-screentime", async (req, res) => {
 
     // Fetch total data from start date
     const totalRows = await fetchRescueTimeDataForUser(user, startDate, nowEastern);
+    console.log("totalRows", totalRows);
     const totalUnproductiveMinutes = calculateUnproductiveMinutes(totalRows);
 
     const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
