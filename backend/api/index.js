@@ -39,39 +39,66 @@ const RESCUETIME_KEYS = {
 };
 
 // --- Utils ---
+
+// Helper to get midnight Eastern for a given date, returned as UTC Date object
+function getMidnightEastern(date = new Date()) {
+  // Get the date in Eastern timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((p) => p.type === "year").value;
+  const month = parts.find((p) => p.type === "month").value;
+  const day = parts.find((p) => p.type === "day").value;
+
+  // Try both possible offsets (EDT=-04:00, EST=-05:00) and use the one that
+  // produces the correct date when converted back to Eastern
+  for (const offset of ["-04:00", "-05:00"]) {
+    const testDate = new Date(`${year}-${month}-${day}T00:00:00${offset}`);
+    const testParts = formatter.formatToParts(testDate);
+    const testYear = testParts.find((p) => p.type === "year").value;
+    const testMonth = testParts.find((p) => p.type === "month").value;
+    const testDay = testParts.find((p) => p.type === "day").value;
+
+    if (testYear === year && testMonth === month && testDay === day) {
+      return testDate;
+    }
+  }
+
+  // Fallback (should not reach here)
+  return new Date(`${year}-${month}-${day}T00:00:00-05:00`);
+}
+
 function getTodayMidnight() {
-  // Force Eastern Time (ET) - handles both EST and EDT automatically
-  const now = new Date();
-  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  return new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
+  return getMidnightEastern();
 }
 
 function getWeekStartMidnight() {
   // Get start of current week (Sunday 12 AM Eastern)
   const now = new Date();
-  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
 
-  // Get the current day of week (0 = Sunday, 1 = Monday, etc.)
-  const dayOfWeek = easternTime.getDay();
+  // Get the current day of week in Eastern timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    weekday: "short",
+  });
+  const weekday = formatter.format(now);
+  const weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const dayOfWeek = weekdayMap[weekday];
 
-  // Calculate days to subtract to get to Sunday
-  const daysToSubtract = dayOfWeek;
+  // Calculate Sunday's date by going back dayOfWeek days
+  const sundayDate = new Date(now);
+  sundayDate.setDate(sundayDate.getDate() - dayOfWeek);
 
-  // Create Sunday midnight
-  const weekStart = new Date(
-    easternTime.getFullYear(),
-    easternTime.getMonth(),
-    easternTime.getDate()
-  );
-  weekStart.setDate(weekStart.getDate() - daysToSubtract);
-
-  return weekStart;
+  return getMidnightEastern(sundayDate);
 }
 
 function getCurrentTimeInEastern() {
-  // Get current time in Eastern timezone
-  const now = new Date();
-  return new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  // Return the current time as-is (it's already UTC, which can be compared with DB timestamps)
+  return new Date();
 }
 
 async function fetchRescueTimeDataForUser(user, startTime, endTime) {
@@ -210,7 +237,6 @@ app.get("/api/:user/current-screentime", async (req, res) => {
 
     // Fetch total data from start date
     const totalRows = await fetchRescueTimeDataForUser(user, startDate, nowEastern);
-    console.log("totalRows", totalRows);
     const totalUnproductiveMinutes = calculateUnproductiveMinutes(totalRows);
 
     const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;

@@ -18,14 +18,62 @@ export function resolveUser(user) {
   throw new Error(`Unknown user "${user}". Expected "justin" or "emily".`);
 }
 
+// Helper to get midnight Eastern for a given date, returned as UTC Date object
+function getMidnightEastern(date = new Date()) {
+  // Get the date in Eastern timezone
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = formatter.formatToParts(date);
+  const year = parts.find((p) => p.type === "year").value;
+  const month = parts.find((p) => p.type === "month").value;
+  const day = parts.find((p) => p.type === "day").value;
+
+  // Try both possible offsets (EDT=-04:00, EST=-05:00) and use the one that
+  // produces the correct date when converted back to Eastern
+  for (const offset of ["-04:00", "-05:00"]) {
+    const testDate = new Date(`${year}-${month}-${day}T00:00:00${offset}`);
+    const testParts = formatter.formatToParts(testDate);
+    const testYear = testParts.find((p) => p.type === "year").value;
+    const testMonth = testParts.find((p) => p.type === "month").value;
+    const testDay = testParts.find((p) => p.type === "day").value;
+
+    if (testYear === year && testMonth === month && testDay === day) {
+      return testDate;
+    }
+  }
+
+  // Fallback (should not reach here)
+  return new Date(`${year}-${month}-${day}T00:00:00-05:00`);
+}
+
+// Get current date components in Eastern timezone
+function getEasternDateComponents(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  });
+
+  const parts = formatter.formatToParts(date);
+  return {
+    year: parseInt(parts.find((p) => p.type === "year").value),
+    month: parseInt(parts.find((p) => p.type === "month").value),
+    day: parseInt(parts.find((p) => p.type === "day").value),
+    weekday: parts.find((p) => p.type === "weekday").value,
+  };
+}
+
 export const getTodayImageCount = async (isJustinFlag) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
-  // Get today's date in Eastern time
-  const now = new Date();
-  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  const today = new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
-  const todayISO = today.toISOString();
+  const todayMidnight = getMidnightEastern();
+  const todayISO = todayMidnight.toISOString();
 
   const { data, error } = await supabase
     .from("outputs")
@@ -42,23 +90,18 @@ export const getWeeklyImageCount = async (isJustinFlag) => {
 
   // Get start of current week (Sunday 12 AM Eastern)
   const now = new Date();
-  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
+  const { weekday } = getEasternDateComponents(now);
 
-  // Get the current day of week (0 = Sunday, 1 = Monday, etc.)
-  const dayOfWeek = easternTime.getDay();
+  // Map weekday to number (Sun=0, Mon=1, etc.)
+  const weekdayMap = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  const dayOfWeek = weekdayMap[weekday];
 
-  // Calculate days to subtract to get to Sunday
-  const daysToSubtract = dayOfWeek;
+  // Calculate Sunday's date by going back dayOfWeek days
+  const sundayDate = new Date(now);
+  sundayDate.setDate(sundayDate.getDate() - dayOfWeek);
 
-  // Create Sunday midnight
-  const weekStart = new Date(
-    easternTime.getFullYear(),
-    easternTime.getMonth(),
-    easternTime.getDate()
-  );
-  weekStart.setDate(weekStart.getDate() - daysToSubtract);
-
-  const weekStartISO = weekStart.toISOString();
+  const weekStartMidnight = getMidnightEastern(sundayDate);
+  const weekStartISO = weekStartMidnight.toISOString();
 
   const { data, error } = await supabase
     .from("outputs")
@@ -120,11 +163,8 @@ export const getPortraitHistory = async (isJustinFlag) => {
 export const getLatestImageToday = async (isJustinFlag) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
-  // Get today's date in Eastern time
-  const now = new Date();
-  const easternTime = new Date(now.toLocaleString("en-US", { timeZone: "America/New_York" }));
-  const today = new Date(easternTime.getFullYear(), easternTime.getMonth(), easternTime.getDate());
-  const todayISO = today.toISOString();
+  const todayMidnight = getMidnightEastern();
+  const todayISO = todayMidnight.toISOString();
 
   const { data, error } = await supabase
     .from("outputs")
