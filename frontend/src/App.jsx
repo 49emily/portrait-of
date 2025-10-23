@@ -393,9 +393,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                       )}m`
                     : "0h 0m"}
                 </div>
-                <div className="text-sm text-gray-600 leading-tight">
-                  Total Brainrot Since Start
-                </div>
+                <div className="text-sm text-gray-600 leading-tight">Total Brainrot Past Month</div>
               </div>
             </div>
 

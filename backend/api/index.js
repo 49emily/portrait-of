@@ -228,16 +228,19 @@ app.get("/api/:user/current-screentime", async (req, res) => {
 
     const nowEastern = getCurrentTimeInEastern();
     const weekStartMidnight = getWeekStartMidnight();
-    const startDate = getStartDateFromEnv();
+
+    // Calculate date 30 days ago for past month data
+    const monthAgo = new Date(nowEastern);
+    monthAgo.setDate(monthAgo.getDate() - 29);
 
     // Fetch weekly data
     const weeklyRows = await fetchRescueTimeDataForUser(user, weekStartMidnight, nowEastern);
     const unproductiveMinutes = calculateUnproductiveMinutes(weeklyRows);
     const mostRecentUnproductiveActivity = getMostRecentUnproductiveActivity(weeklyRows);
 
-    // Fetch total data from start date
-    const totalRows = await fetchRescueTimeDataForUser(user, startDate, nowEastern);
-    const totalUnproductiveMinutes = calculateUnproductiveMinutes(totalRows);
+    // Fetch past month data (30 days)
+    const monthRows = await fetchRescueTimeDataForUser(user, monthAgo, nowEastern);
+    const totalUnproductiveMinutes = calculateUnproductiveMinutes(monthRows);
 
     const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
     const expectedImageCount =
@@ -254,7 +257,7 @@ app.get("/api/:user/current-screentime", async (req, res) => {
       timestamp: nowEastern.toISOString(),
       timezone: "America/New_York",
       weekStart: weekStartMidnight.toISOString(),
-      trackingStartDate: startDate.toISOString(),
+      monthStart: monthAgo.toISOString(),
     });
   } catch (error) {
     console.error("Error fetching current screentime:", error);
