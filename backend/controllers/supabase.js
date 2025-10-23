@@ -13,9 +13,13 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 export function resolveUser(user) {
   const u = String(user || "").toLowerCase();
-  if (u === "justin") return { isJustin: true, user: "justin" };
-  if (u === "emily") return { isJustin: false, user: "emily" };
-  throw new Error(`Unknown user "${user}". Expected "justin" or "emily".`);
+  const validUsers = ["justin", "emily", "lele", "serena", "tiffany"];
+
+  if (!validUsers.includes(u)) {
+    throw new Error(`Unknown user "${user}". Expected one of: ${validUsers.join(", ")}`);
+  }
+
+  return { user: u, personName: u };
 }
 
 // Helper to get midnight Eastern for a given date, returned as UTC Date object
@@ -69,7 +73,7 @@ function getEasternDateComponents(date = new Date()) {
   };
 }
 
-export const getTodayImageCount = async (isJustinFlag) => {
+export const getTodayImageCount = async (personName) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   const todayMidnight = getMidnightEastern();
@@ -79,13 +83,13 @@ export const getTodayImageCount = async (isJustinFlag) => {
     .from("outputs")
     .select("id")
     .gte("created_at", todayISO)
-    .eq("is_justin", isJustinFlag);
+    .eq("person_name", personName);
 
   if (error) throw error;
   return data ? data.length : 0;
 };
 
-export const getWeeklyImageCount = async (isJustinFlag) => {
+export const getWeeklyImageCount = async (personName) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   // Get start of current week (Sunday 12 AM Eastern)
@@ -107,21 +111,21 @@ export const getWeeklyImageCount = async (isJustinFlag) => {
     .from("outputs")
     .select("id")
     .gte("created_at", weekStartISO)
-    .eq("is_justin", isJustinFlag);
+    .eq("person_name", personName);
 
   if (error) throw error;
   return data ? data.length : 0;
 };
 
-export const getPortraitHistory = async (isJustinFlag) => {
+export const getPortraitHistory = async (personName) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   const { data, error } = await supabase
     .from("outputs")
     .select(
-      "id, version, prompt, file_name, model_version, response_id, used_base, note, is_justin, created_at"
+      "id, version, prompt, file_name, model_version, response_id, used_base, note, person_name, created_at"
     )
-    .eq("is_justin", isJustinFlag)
+    .eq("person_name", personName)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -151,7 +155,7 @@ export const getPortraitHistory = async (isJustinFlag) => {
       response_id: record.response_id,
       used_base: record.used_base,
       note: record.note,
-      is_justin: record.is_justin,
+      person_name: record.person_name,
       timestamp: record.created_at,
       imageUrl,
       thumbnailUrl,
@@ -160,7 +164,7 @@ export const getPortraitHistory = async (isJustinFlag) => {
   });
 };
 
-export const getLatestImageToday = async (isJustinFlag) => {
+export const getLatestImageToday = async (personName) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   const todayMidnight = getMidnightEastern();
@@ -170,7 +174,7 @@ export const getLatestImageToday = async (isJustinFlag) => {
     .from("outputs")
     .select("file_name")
     .gte("created_at", todayISO)
-    .eq("is_justin", isJustinFlag)
+    .eq("person_name", personName)
     .order("created_at", { ascending: false })
     .limit(1);
 
@@ -186,13 +190,13 @@ export const getLatestImageToday = async (isJustinFlag) => {
   return Buffer.from(arrayBuffer).toString("base64");
 };
 
-export const getLatestImageAnyDay = async (isJustinFlag) => {
+export const getLatestImageAnyDay = async (personName) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   const { data, error } = await supabase
     .from("outputs")
     .select("file_name")
-    .eq("is_justin", isJustinFlag)
+    .eq("person_name", personName)
     .order("created_at", { ascending: false })
     .limit(1);
 
@@ -213,7 +217,7 @@ export const getVideosForWeeks = async () => {
 
   const { data, error } = await supabase
     .from("videos")
-    .select("id, week, is_justin, file_name")
+    .select("id, week, person_name, file_name")
     .in("week", [1, 2, 3, 4, 5])
     .order("week", { ascending: true });
 
@@ -229,7 +233,10 @@ export const getVideosForWeeks = async () => {
   }
 
   data.forEach((video) => {
-    const userKey = video.is_justin ? "justin" : "emily";
+    const userKey = video.person_name;
+    if (!videosByWeek[video.week]) {
+      videosByWeek[video.week] = {};
+    }
     videosByWeek[video.week][userKey] = {
       id: video.id,
       file_name: video.file_name,
@@ -249,11 +256,14 @@ export const uploadImageToSupabase = async (imageBase64, user_id, prompt, metada
     .from("images")
     .upload(image_path, decode(imageBase64), { contentType: "image/png" });
 
-  // Get next version for this user partition (is_justin)
+  // Get next version for this user partition (person_name)
+  const personName = metadata.personName;
+  if (!personName) throw new Error("metadata.personName is required");
+
   const { data: last, error: selErr } = await supabase
     .from("outputs")
     .select("version")
-    .eq("is_justin", metadata.isJustin ?? false)
+    .eq("person_name", personName)
     .order("version", { ascending: false })
     .limit(1);
   if (selErr) throw selErr;
@@ -267,7 +277,7 @@ export const uploadImageToSupabase = async (imageBase64, user_id, prompt, metada
     response_id: metadata.responseId ?? null,
     used_base: metadata.usedBase ?? false,
     note: metadata.note ?? null,
-    is_justin: metadata.isJustin ?? false,
+    person_name: personName,
     version: nextVersion, // ← per-user version
   };
 

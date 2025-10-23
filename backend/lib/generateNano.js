@@ -15,13 +15,15 @@ import {
   resolveUser,
 } from "../controllers/supabase.js";
 
-// ---------- CLI: --user=justin|emily ----------
+// ---------- CLI: --user=justin|emily|lele|serena|tiffany ----------
 const argUser = (process.argv.find((a) => a.startsWith("--user=")) || "").split("=")[1];
 if (!argUser) {
-  console.error("❌ Missing --user. Usage: node generateNano.js --user=justin|emily");
+  console.error(
+    "❌ Missing --user. Usage: node generateNano.js --user=justin|emily|lele|serena|tiffany"
+  );
   process.exit(1);
 }
-const { isJustin, user } = resolveUser(argUser);
+const { user, personName } = resolveUser(argUser);
 
 // ---------- Weekly reset configuration ----------
 const WEEKLY_RESET_DAY = 0; // Sunday
@@ -46,6 +48,9 @@ const UNPRODUCTIVE_THRESHOLD_INCREMENT = 30;
 const RESCUETIME_KEYS = {
   justin: process.env.RESCUETIME_API_KEY_JUSTIN,
   emily: process.env.RESCUETIME_API_KEY_EMILY,
+  lele: process.env.RESCUETIME_API_KEY_LELE,
+  serena: process.env.RESCUETIME_API_KEY_SERENA,
+  tiffany: process.env.RESCUETIME_API_KEY_TIFFANY,
 };
 const RESCUETIME_API_KEY = RESCUETIME_KEYS[user];
 if (!RESCUETIME_API_KEY) {
@@ -150,10 +155,10 @@ function pickPrompt(prompts, manifest, avoidLastN = 3) {
 }
 
 // ---------- Weekly reset decision ----------
-async function selectInputImage({ isJustin }) {
+async function selectInputImage({ personName }) {
   // First, see if there is any image ever
-  const latestAny = await getLatestImageAnyDay(isJustin);
-  const latestToday = await getLatestImageToday(isJustin);
+  const latestAny = await getLatestImageAnyDay(personName);
+  const latestToday = await getLatestImageToday(personName);
 
   // If no history at all, must use base
   if (!latestAny) {
@@ -189,7 +194,7 @@ async function main() {
   const rows = await fetchRescueTimeData(weekStartMidnight, nowEastern);
 
   const unproductiveMinutes = calculateUnproductiveMinutes(rows);
-  const weeklyImageCount = await getWeeklyImageCount(isJustin);
+  const weeklyImageCount = await getWeeklyImageCount(personName);
 
   console.log(
     `[gate][${user}] Unproductive this week: ${unproductiveMinutes.toFixed(
@@ -213,14 +218,23 @@ async function main() {
   const prompts = loadPromptsFlat();
 
   // Decide input image based on weekly reset policy
-  const sel = await selectInputImage({ isJustin });
+  const sel = await selectInputImage({ personName });
   let inputBase64 = sel.base64;
   let usedBase = false;
   let firstRun = false;
 
   if (sel.forceBase) {
     firstRun = true;
-    const baseName = user === "justin" ? "justin_base.png" : "emily_base.jpg";
+    // Map user names to their base image files
+    const baseImageMap = {
+      justin: "justin_base.png",
+      emily: "emily_base.jpg",
+      lele: "lele_base.jpeg",
+      serena: "serena_base.jpeg",
+      tiffany: "tiffany_base.jpg",
+    };
+    const baseName = baseImageMap[user];
+    if (!baseName) throw new Error(`No base image mapping found for user: ${user}`);
     const baseImage = path.join(IMAGES_DIR, baseName);
     if (!fs.existsSync(baseImage)) throw new Error(`Base image not found at ${baseImage}`);
     inputBase64 = readImageAsBase64(baseImage);
@@ -256,7 +270,7 @@ async function main() {
     responseId: res.responseId || null,
     usedBase: usedBase,
     note: textNote,
-    isJustin: isJustin,
+    personName: personName,
   };
 
   const supabaseResult = await uploadImageToSupabase(

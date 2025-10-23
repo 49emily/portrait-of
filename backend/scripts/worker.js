@@ -17,14 +17,17 @@ function runUser(user) {
 }
 
 (async function loop() {
+  // All supported users
+  const users = ["justin", "emily", "lele", "serena", "tiffany"];
+
   for (;;) {
     const ts = new Date().toISOString();
     console.log(`\n[worker] tick @ ${ts}`);
 
-    const results = await Promise.allSettled([runUser("justin"), runUser("emily")]);
+    const results = await Promise.allSettled(users.map((user) => runUser(user)));
 
     results.forEach((r, i) => {
-      const who = i === 0 ? "justin" : "emily";
+      const who = users[i];
       if (r.status === "rejected") {
         console.error(`[worker] ${who} run error:`, r.reason?.message || r.reason);
       }

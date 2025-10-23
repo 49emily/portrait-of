@@ -36,6 +36,9 @@ app.use(express.json());
 const RESCUETIME_KEYS = {
   justin: process.env.RESCUETIME_API_KEY_JUSTIN,
   emily: process.env.RESCUETIME_API_KEY_EMILY,
+  lele: process.env.RESCUETIME_API_KEY_LELE,
+  serena: process.env.RESCUETIME_API_KEY_SERENA,
+  tiffany: process.env.RESCUETIME_API_KEY_TIFFANY,
 };
 
 // --- Utils ---
@@ -177,24 +180,25 @@ app.get("/health", (req, res) => {
 app.get("/", (req, res) => {
   res.json({
     message: "Dorian Portrait Viewer API",
-    version: "2.0.0",
+    version: "3.0.0",
     endpoints: {
-      "/api/justin/portrait-history": "Justin's generations",
-      "/api/justin/current-screentime": "Justin's weekly unproductive minutes + thresholds",
-      "/api/emily/portrait-history": "Emily's generations",
-      "/api/emily/current-screentime": "Emily's weekly unproductive minutes + thresholds",
+      "/api/:user/portrait-history":
+        "User's portrait generations (justin, emily, lele, serena, tiffany)",
+      "/api/:user/current-screentime": "User's weekly unproductive minutes + thresholds",
+      "/api/videos": "Weekly video replays",
       "/health": "Health check",
     },
+    supportedUsers: ["justin", "emily", "lele", "serena", "tiffany"],
   });
 });
 
 // --- User-scoped routes ---
 app.get("/api/:user/portrait-history", async (req, res) => {
   try {
-    const { user } = req.params; // 'justin' | 'emily'
-    const { isJustin } = resolveUser(user);
+    const { user } = req.params; // 'justin' | 'emily' | 'lele' | 'serena' | 'tiffany'
+    const { personName } = resolveUser(user);
 
-    const history = await getPortraitHistory(isJustin);
+    const history = await getPortraitHistory(personName);
     res.json({ success: true, user, history });
   } catch (error) {
     console.error("Error fetching portrait history:", error);
