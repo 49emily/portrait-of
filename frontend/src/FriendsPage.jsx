@@ -174,7 +174,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
         {screentime ? (
           <div className="bg-gray-100 text-gray-800 py-4 px-6">
             {/* Most Recent Unproductive Activity */}
-            {screentime.mostRecentUnproductiveActivity && (
+            {/* {screentime.mostRecentUnproductiveActivity && (
               <div className="mb-4">
                 <div className="text-sm text-gray-800 flex items-center gap-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -201,7 +201,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                   </span>
                 </div>
               </div>
-            )}
+            )} */}
 
             <div className="flex justify-between gap-6">
               {/* Weekly Brainrot Time */}
@@ -305,27 +305,27 @@ function FriendsPage() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white text-center mb-4">
           Wall of Shame
         </h1>
-        <p className="text-lg text-gray-300 max-w-3xl mx-auto text-center leading-relaxed mb-6">
-          Our friends have joined the experiment, each with their own evolving portrait tracking
-          their digital distractions.
+        <p className="text-lg text-gray-300 max-w-3xl mx-auto text-center leading-relaxed">
+          Our friends have joined the experiment, each with their own evolving portrait as a
+          communal act of surveillance.
         </p>
       </header>
 
       {/* stack vertically */}
-      <main className="w-full max-w-6xl flex flex-col gap-20 flex-grow py-8">
+      <main className="w-full max-w-6xl flex flex-col gap-30 flex-grow py-8">
         <div className="animate-[fadeIn_2s_ease-out_0.5s_both]">
           <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Lele</h2>
-          <UserSection user="lele" plaqueName="Lele" API_BASE_URL={API_BASE_URL} />
+          <UserSection user="lele" plaqueName="Lele Zhang" API_BASE_URL={API_BASE_URL} />
         </div>
         <div className="animate-[fadeIn_2s_ease-out_0.75s_both]">
           <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Serena</h2>
-          <UserSection user="serena" plaqueName="Serena" API_BASE_URL={API_BASE_URL} />
+          <UserSection user="serena" plaqueName="Serena Mao" API_BASE_URL={API_BASE_URL} />
         </div>
         <div className="animate-[fadeIn_2s_ease-out_1s_both]">
           <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">
             Tiffany
           </h2>
-          <UserSection user="tiffany" plaqueName="Tiffany" API_BASE_URL={API_BASE_URL} />
+          <UserSection user="tiffany" plaqueName="Tiffany Wang" API_BASE_URL={API_BASE_URL} />
         </div>
       </main>
 
