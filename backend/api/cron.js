@@ -55,7 +55,9 @@ export default async function handler(req, res) {
   console.log(`\n[cron] tick @ ${ts}`);
 
   try {
-    const results = await Promise.allSettled([runUser("justin"), runUser("emily")]);
+    // Run for all users
+    const allUsers = ["justin", "emily", "lele", "serena", "tiffany"];
+    const results = await Promise.allSettled(allUsers.map((user) => runUser(user)));
 
     const response = {
       timestamp: ts,
@@ -63,7 +65,7 @@ export default async function handler(req, res) {
     };
 
     results.forEach((r, i) => {
-      const who = i === 0 ? "justin" : "emily";
+      const who = allUsers[i];
       if (r.status === "fulfilled") {
         console.log(`[cron] ${who} run completed successfully`);
         response.results.push({
