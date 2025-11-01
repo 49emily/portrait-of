@@ -295,13 +295,15 @@ function FriendsPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
+      {/* Back to Main Gallery link in top left */}
+      <Link
+        to="/"
+        className="fixed top-8 left-8 text-sm text-gray-400 hover:text-white transition-colors z-10"
+      >
+        ← Back to Main Gallery
+      </Link>
+
       <header className="w-full max-w-6xl animate-[fadeInFromTop_2s_ease-out] py-16">
-        <Link
-          to="/"
-          className="text-sm text-gray-400 hover:text-white transition-colors mb-12 inline-block"
-        >
-          ← Back to Main Gallery
-        </Link>
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white text-center mb-4">
           Wall of Shame
         </h1>
@@ -326,6 +328,10 @@ function FriendsPage() {
             Tiffany
           </h2>
           <UserSection user="tiffany" plaqueName="Tiffany Wang" API_BASE_URL={API_BASE_URL} />
+        </div>
+        <div className="animate-[fadeIn_2s_ease-out_1.25s_both]">
+          <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Isaac</h2>
+          <UserSection user="isaac" plaqueName="Isaac Sun" API_BASE_URL={API_BASE_URL} />
         </div>
       </main>
 

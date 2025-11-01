@@ -1,5 +1,6 @@
 // src/HomePage.jsx
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import "./App.css";
 import {
   Carousel,
@@ -556,10 +557,54 @@ function RecentVideos({ API_BASE_URL }) {
 
 function HomePage() {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex flex-col items-center p-8">
-      <header className="w-full max-w-6xl animate-[fadeInFromTop_2s_ease-out] py-16">
+      {/* Sticky scrolling banner */}
+      <div
+        className="fixed top-0 left-0 w-full bg-red-600 text-white py-2 z-50 overflow-hidden cursor-pointer transition-colors"
+        onClick={() => navigate("/friends")}
+      >
+        <div className="flex whitespace-nowrap animate-[scroll_20s_linear_infinite]">
+          {/* Repeat content twice for seamless infinite scroll */}
+          <div className="flex">
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+          </div>
+          <div className="flex">
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+            <span className="inline-block px-8 text-lg font-bold">
+              WALL OF SHAME @ PORTRAITOFYOU.SPACE/FRIENDS
+            </span>
+          </div>
+        </div>
+      </div>
+      <header className="w-full max-w-6xl animate-[fadeInFromTop_2s_ease-out] py-16 pt-24">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white text-center mb-4">
           Portrait of You
         </h1>

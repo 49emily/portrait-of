@@ -18,7 +18,8 @@ function runUser(user) {
 
 (async function loop() {
   // All supported users
-  const users = ["justin", "emily", "lele", "serena", "tiffany"];
+  const users = ["justin", "emily", "lele", "serena", "tiffany", "isaac"];
+  console.log(users);
 
   for (;;) {
     const ts = new Date().toISOString();

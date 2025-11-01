@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
   try {
     // Run for all users
-    const allUsers = ["justin", "emily", "lele", "serena", "tiffany"];
+    const allUsers = ["justin", "emily", "lele", "serena", "tiffany", "isaac"];
     const results = await Promise.allSettled(allUsers.map((user) => runUser(user)));
 
     const response = {
