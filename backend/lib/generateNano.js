@@ -15,11 +15,11 @@ import {
   resolveUser,
 } from "../controllers/supabase.js";
 
-// ---------- CLI: --user=justin|emily|lele|serena|tiffany|isaac ----------
+// ---------- CLI: --user=justin|emily|lele|serena|tiffany|isaac|ameya ----------
 const argUser = (process.argv.find((a) => a.startsWith("--user=")) || "").split("=")[1];
 if (!argUser) {
   console.error(
-    "❌ Missing --user. Usage: node generateNano.js --user=justin|emily|lele|serena|tiffany|isaac"
+    "❌ Missing --user. Usage: node generateNano.js --user=justin|emily|lele|serena|tiffany|isaac|ameya"
   );
   process.exit(1);
 }
@@ -52,6 +52,7 @@ const RESCUETIME_KEYS = {
   serena: process.env.RESCUETIME_API_KEY_SERENA,
   tiffany: process.env.RESCUETIME_API_KEY_TIFFANY,
   isaac: process.env.RESCUETIME_API_KEY_ISAAC,
+  ameya: process.env.RESCUETIME_API_KEY_AMEYA,
 };
 const RESCUETIME_API_KEY = RESCUETIME_KEYS[user];
 if (!RESCUETIME_API_KEY) {
@@ -234,6 +235,7 @@ async function main() {
       serena: "serena_base.jpeg",
       tiffany: "tiffany_base.jpg",
       isaac: "isaac_base.png",
+      ameya: "ameya_base.jpeg",
     };
     const baseName = baseImageMap[user];
     if (!baseName) throw new Error(`No base image mapping found for user: ${user}`);

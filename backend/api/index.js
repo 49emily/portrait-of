@@ -40,6 +40,7 @@ const RESCUETIME_KEYS = {
   serena: process.env.RESCUETIME_API_KEY_SERENA,
   tiffany: process.env.RESCUETIME_API_KEY_TIFFANY,
   isaac: process.env.RESCUETIME_API_KEY_ISAAC,
+  ameya: process.env.RESCUETIME_API_KEY_AMEYA,
 };
 
 // --- Utils ---
@@ -184,12 +185,12 @@ app.get("/", (req, res) => {
     version: "3.0.0",
     endpoints: {
       "/api/:user/portrait-history":
-        "User's portrait generations (justin, emily, lele, serena, tiffany, isaac)",
+        "User's portrait generations (justin, emily, lele, serena, tiffany, isaac, ameya)",
       "/api/:user/current-screentime": "User's weekly unproductive minutes + thresholds",
       "/api/videos": "Weekly video replays",
       "/health": "Health check",
     },
-    supportedUsers: ["justin", "emily", "lele", "serena", "tiffany", "isaac"],
+    supportedUsers: ["justin", "emily", "lele", "serena", "tiffany", "isaac", "ameya"],
   });
 });
 

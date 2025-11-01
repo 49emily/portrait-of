@@ -18,7 +18,7 @@ function runUser(user) {
 
 (async function loop() {
   // All supported users
-  const users = ["justin", "emily", "lele", "serena", "tiffany", "isaac"];
+  const users = ["justin", "emily", "lele", "serena", "tiffany", "isaac", "ameya"];
   console.log(users);
 
   for (;;) {

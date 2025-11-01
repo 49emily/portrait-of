@@ -13,7 +13,7 @@ if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
 
 export function resolveUser(user) {
   const u = String(user || "").toLowerCase();
-  const validUsers = ["justin", "emily", "lele", "serena", "tiffany", "isaac"];
+  const validUsers = ["justin", "emily", "lele", "serena", "tiffany", "isaac", "ameya"];
 
   if (!validUsers.includes(u)) {
     throw new Error(`Unknown user "${user}". Expected one of: ${validUsers.join(", ")}`);
