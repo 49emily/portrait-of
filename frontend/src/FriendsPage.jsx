@@ -325,6 +325,10 @@ function FriendsPage() {
           <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Lele</h2>
           <UserSection user="lele" plaqueName="Lele Zhang" API_BASE_URL={API_BASE_URL} />
         </div>
+        <div className="animate-[fadeIn_2s_ease-out_1.5s_both]">
+          <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Ameya</h2>
+          <UserSection user="ameya" plaqueName="Ameya Jadhav" API_BASE_URL={API_BASE_URL} />
+        </div>
         <div className="animate-[fadeIn_2s_ease-out_0.75s_both]">
           <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Serena</h2>
           <UserSection user="serena" plaqueName="Serena Mao" API_BASE_URL={API_BASE_URL} />
@@ -333,11 +337,6 @@ function FriendsPage() {
         <div className="animate-[fadeIn_2s_ease-out_1.25s_both]">
           <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Isaac</h2>
           <UserSection user="isaac" plaqueName="Isaac Sun" API_BASE_URL={API_BASE_URL} />
-        </div>
-
-        <div className="animate-[fadeIn_2s_ease-out_1.5s_both]">
-          <h2 className="text-2xl font-bold tracking-tight mb-12 text-white text-center">Ameya</h2>
-          <UserSection user="ameya" plaqueName="Ameya Jadhav" API_BASE_URL={API_BASE_URL} />
         </div>
       </main>
 
