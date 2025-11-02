@@ -218,14 +218,14 @@ export const getVideosForWeeks = async () => {
   const { data, error } = await supabase
     .from("videos")
     .select("id, week, person_name, file_name")
-    .in("week", [1, 2, 3, 4, 5])
+    .in("week", [1, 2, 3, 4, 5, 6, 7])
     .order("week", { ascending: true });
 
   if (error) throw error;
 
   // Group videos by week and user
   const videosByWeek = {};
-  for (let week = 1; week <= 4; week++) {
+  for (let week = 1; week <= 7; week++) {
     videosByWeek[week] = {
       justin: null,
       emily: null,
