@@ -6,17 +6,32 @@ import { decode } from "base64-arraybuffer";
 
 let supabase = null;
 if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+  supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
 } else {
-  console.warn("⚠️  Supabase service role key not configured. Admin ops disabled.");
+  console.warn(
+    "⚠️  Supabase service role key not configured. Admin ops disabled."
+  );
 }
 
 export function resolveUser(user) {
   const u = String(user || "").toLowerCase();
-  const validUsers = ["justin", "emily", "lele", "serena", "tiffany", "isaac", "ameya"];
+  const validUsers = [
+    "justin",
+    "emily",
+    "lele",
+    "serena",
+    "tiffany",
+    "isaac",
+    "ameya",
+  ];
 
   if (!validUsers.includes(u)) {
-    throw new Error(`Unknown user "${user}". Expected one of: ${validUsers.join(", ")}`);
+    throw new Error(
+      `Unknown user "${user}". Expected one of: ${validUsers.join(", ")}`
+    );
   }
 
   return { user: u, personName: u };
@@ -131,20 +146,25 @@ export const getPortraitHistory = async (personName) => {
   if (error) throw error;
 
   return data.map((record) => {
-    const originalUrl = supabase.storage.from("images").getPublicUrl(record.file_name)
-      .data.publicUrl;
+    const originalUrl = supabase.storage
+      .from("images")
+      .getPublicUrl(record.file_name).data.publicUrl;
 
-    const imageUrl = supabase.storage.from("images").getPublicUrl(record.file_name, {
-      transform: {
-        quality: 60,
-      },
-    }).data.publicUrl;
+    const imageUrl = supabase.storage
+      .from("images")
+      .getPublicUrl(record.file_name, {
+        transform: {
+          quality: 60,
+        },
+      }).data.publicUrl;
 
-    const thumbnailUrl = supabase.storage.from("images").getPublicUrl(record.file_name, {
-      transform: {
-        quality: 20,
-      },
-    }).data.publicUrl;
+    const thumbnailUrl = supabase.storage
+      .from("images")
+      .getPublicUrl(record.file_name, {
+        transform: {
+          quality: 20,
+        },
+      }).data.publicUrl;
 
     return {
       id: record.id, // global PK (don't show on UI)
@@ -218,14 +238,14 @@ export const getVideosForWeeks = async () => {
   const { data, error } = await supabase
     .from("videos")
     .select("id, week, person_name, file_name")
-    .in("week", [1, 2, 3, 4, 5, 6, 7])
+    .in("week", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     .order("week", { ascending: true });
 
   if (error) throw error;
 
   // Group videos by week and user
   const videosByWeek = {};
-  for (let week = 1; week <= 7; week++) {
+  for (let week = 1; week <= 10; week++) {
     videosByWeek[week] = {
       justin: null,
       emily: null,
@@ -240,14 +260,20 @@ export const getVideosForWeeks = async () => {
     videosByWeek[video.week][userKey] = {
       id: video.id,
       file_name: video.file_name,
-      videoUrl: supabase.storage.from("videos").getPublicUrl(video.file_name).data.publicUrl,
+      videoUrl: supabase.storage.from("videos").getPublicUrl(video.file_name)
+        .data.publicUrl,
     };
   });
 
   return videosByWeek;
 };
 
-export const uploadImageToSupabase = async (imageBase64, user_id, prompt, metadata = {}) => {
+export const uploadImageToSupabase = async (
+  imageBase64,
+  user_id,
+  prompt,
+  metadata = {}
+) => {
   if (!supabase) throw new Error("Supabase not configured.");
 
   const image_path = `${Date.now()}.png`;
@@ -281,7 +307,10 @@ export const uploadImageToSupabase = async (imageBase64, user_id, prompt, metada
     version: nextVersion, // ← per-user version
   };
 
-  const { data, error } = await supabase.from("outputs").insert(insertData).select();
+  const { data, error } = await supabase
+    .from("outputs")
+    .insert(insertData)
+    .select();
 
   if (error) throw error;
   return data;
