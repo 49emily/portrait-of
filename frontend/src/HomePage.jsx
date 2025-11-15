@@ -129,7 +129,7 @@ function VideoSection({ API_BASE_URL }) {
           History
         </h2>
         <motion.div style={{ x }} className="flex gap-8 lg:px-20" data-content>
-          {[1, 2, 3, 4, 5, 6, 7].map((week) => (
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((week) => (
             <div key={week} className="flex-shrink-0 space-y-4">
               <div className="text-lg text-gray-300 text-center font-medium">Week {week}</div>
               <div className="flex gap-4">
