@@ -12,7 +12,7 @@ import {
 
 function UserSection({ user, plaqueName, API_BASE_URL }) {
   const [history, setHistory] = useState([]);
-  const [screentime, setScreentime] = useState(null);
+  const [screentime, setScreentime] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewedPortrait, setViewedPortrait] = useState(null);
@@ -81,12 +81,12 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
 
   useEffect(() => {
     fetchHistory();
-    fetchScreentime();
-    const interval = setInterval(() => {
-      fetchHistory();
-      fetchScreentime();
-    }, 15000);
-    return () => clearInterval(interval);
+    // fetchScreentime();
+    // const interval = setInterval(() => {
+    //   fetchHistory();
+    //   fetchScreentime();
+    // }, 15000);
+    // return () => clearInterval(interval);
   }, [fetchHistory, fetchScreentime]);
 
   // Set the selected and viewed portrait to the most recent one when history changes
@@ -119,6 +119,34 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   const handlePortraitClick = (portrait) => {
     setSelectedPortrait(portrait);
     setViewedPortrait(portrait);
+  };
+
+  const userToScreenTimeMapping = {
+    tiffany: {
+      days: 1,
+      hours: 4,
+      mins: 30,
+    },
+    lele: {
+      days: 2,
+      hours: 14,
+      mins: 30,
+    },
+    ameya: {
+      days: 0,
+      hours: 23,
+      mins: 0,
+    },
+    serena: {
+      days: 0,
+      hours: 6,
+      mins: 0,
+    },
+    isaac: {
+      days: 2,
+      hours: 6,
+      mins: 30,
+    },
   };
 
   return (
@@ -172,7 +200,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
         )}
 
         {screentime ? (
-          <div className="bg-gray-100 text-gray-800 py-4 px-6">
+          <div className="bg-gray-100 text-gray-800 p-6">
             {/* Most Recent Unproductive Activity */}
             {/* {screentime.mostRecentUnproductiveActivity && (
               <div className="mb-4">
@@ -204,8 +232,33 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
             )} */}
 
             <div className="flex justify-between gap-6">
-              {/* Weekly Brainrot Time */}
               <div className="text-center flex-1">
+                <div className="mb-3 font-bold">Total Unproductive Screen Time</div>
+                <div className="flex justify-center gap-8">
+                  <>
+                    <div className="flex flex-col items-center">
+                      <div className="text-4xl font-bold text-gray-800">
+                        {userToScreenTimeMapping[user].days}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">days</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="text-4xl font-bold text-gray-800">
+                        {userToScreenTimeMapping[user].hours}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">hours</div>
+                    </div>
+                    <div className="flex flex-col items-center">
+                      <div className="text-4xl font-bold text-gray-800">
+                        {userToScreenTimeMapping[user].mins}
+                      </div>
+                      <div className="text-sm text-gray-500 mt-1">mins</div>
+                    </div>
+                  </>
+                </div>
+              </div>
+
+              {/* <div className="text-center flex-1">
                 <div className="text-2xl text-gray-800 font-bold mb-1">
                   {screentime.unproductiveMinutes
                     ? `${Math.floor(screentime.unproductiveMinutes / 60)}h ${Math.floor(
@@ -216,7 +269,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                 <div className="text-sm text-gray-600 leading-tight">This Week's Brainrot Time</div>
               </div>
 
-              {/* Total Brainrot Time */}
+     
               <div className="text-center flex-1">
                 <div className="text-2xl text-gray-800 font-bold mb-1">
                   {screentime.totalUnproductiveMinutes
@@ -226,16 +279,20 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
                     : "0h 0m"}
                 </div>
                 <div className="text-sm text-gray-600 leading-tight">Total Brainrot Past Month</div>
-              </div>
+              </div> */}
             </div>
 
-            <div className="text-xs text-gray-500 text-center mt-4">
+            {/* <div className="text-xs text-gray-500 text-center mt-4">
               Next image at{" "}
               {screentime.nextThreshold
                 ? `${Math.floor(screentime.nextThreshold / 60)}h ${Math.floor(
                     screentime.nextThreshold % 60
                   )}m`
                 : "0h 0m"}
+            </div> */}
+
+            <div className="text-xs text-gray-500 text-center mt-4">
+              A new image was generated every 30 minutes of brainrot time.
             </div>
           </div>
         ) : (
