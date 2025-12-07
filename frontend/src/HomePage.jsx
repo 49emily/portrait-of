@@ -270,16 +270,8 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   };
 
   const userToScreenTimeMapping = {
-    emily: {
-      days: 1,
-      hours: 0,
-      mins: 29,
-    },
-    justin: {
-      days: 7,
-      hours: 11,
-      mins: 54,
-    },
+    emily: 1852, // 1 day, 0 hours, 29 mins
+    justin: 10794, // 7 days, 11 hours, 54 mins
   };
 
   return (
@@ -368,26 +360,12 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
               <div className="text-center flex-1">
                 <div className="mb-3 font-bold">Total Unproductive Screen Time</div>
                 <div className="flex justify-center gap-8">
-                  <>
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl font-bold text-gray-800">
-                        {userToScreenTimeMapping[user].days}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">days</div>
+                  <div className="flex flex-col items-center">
+                    <div className="text-4xl font-bold text-gray-800">
+                      {Math.floor(userToScreenTimeMapping[user] / 60)}h{" "}
+                      {userToScreenTimeMapping[user] % 60}m
                     </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl font-bold text-gray-800">
-                        {userToScreenTimeMapping[user].hours}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">hours</div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl font-bold text-gray-800">
-                        {userToScreenTimeMapping[user].mins}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">mins</div>
-                    </div>
-                  </>
+                  </div>
                 </div>
               </div>
               {/* <div className="text-center flex-1">
@@ -423,7 +401,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
             </div> */}
 
             <div className="text-xs text-gray-500 text-center mt-4">
-              A new image was generated every 30 minutes of brainrot time.
+              A new image was generated every 30 minutes of brainrot time
             </div>
           </div>
         ) : (
@@ -648,8 +626,20 @@ function HomePage() {
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white text-center mb-4">
           Portrait of You
         </h1>
-        <h2 className="text-xl md:text-2xl tracking-tight mb-16 text-white text-center">
-          Justin Guo and Emily Zhang
+        <h2 className="text-xl md:text-2xl tracking-tight mb-16 text-gray-400 text-center">
+          <a
+            href="https://x.com/thatsnotoptimal"
+            className="text-white relative inline-block transition-colors duration-300 after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:left-0 after:bottom-0 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100"
+          >
+            Justin Guo
+          </a>{" "}
+          and{" "}
+          <a
+            href="https://x.com/emilyzsh"
+            className="text-white relative inline-block transition-colors duration-300 after:content-[''] after:absolute after:w-full after:h-0.5 after:bg-white after:left-0 after:bottom-0 after:scale-x-0 after:origin-left after:transition-transform after:duration-300 hover:after:scale-x-100"
+          >
+            Emily Zhang
+          </a>
         </h2>
         <div className="flex flex-col lg:flex-row items-center lg:items-center gap-8 lg:gap-16">
           {/* Left side: Recent Videos */}
@@ -699,7 +689,7 @@ function HomePage() {
 
       {/* Video Section */}
       <VideoSection API_BASE_URL={API_BASE_URL} />
-
+      {/* 
       <footer
         className="w-full max-w-6xl mb-4 text-center gap-2 flex flex-col"
         style={{ color: "#ababab" }}
@@ -734,7 +724,7 @@ function HomePage() {
           </a>
           .
         </p>
-      </footer>
+      </footer> */}
     </div>
   );
 }

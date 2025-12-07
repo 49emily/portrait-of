@@ -122,31 +122,11 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
   };
 
   const userToScreenTimeMapping = {
-    tiffany: {
-      days: 1,
-      hours: 4,
-      mins: 30,
-    },
-    lele: {
-      days: 2,
-      hours: 14,
-      mins: 30,
-    },
-    ameya: {
-      days: 0,
-      hours: 23,
-      mins: 0,
-    },
-    serena: {
-      days: 0,
-      hours: 6,
-      mins: 0,
-    },
-    isaac: {
-      days: 2,
-      hours: 6,
-      mins: 30,
-    },
+    tiffany: 1710, // 1 day, 4 hours, 30 mins
+    lele: 3750, // 2 days, 14 hours, 30 mins
+    ameya: 1380, // 0 days, 23 hours, 0 mins
+    serena: 360, // 0 days, 6 hours, 0 mins
+    isaac: 3270, // 2 days, 6 hours, 30 mins
   };
 
   return (
@@ -235,26 +215,12 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
               <div className="text-center flex-1">
                 <div className="mb-3 font-bold">Total Unproductive Screen Time</div>
                 <div className="flex justify-center gap-8">
-                  <>
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl font-bold text-gray-800">
-                        {userToScreenTimeMapping[user].days}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">days</div>
+                  <div className="flex flex-col items-center">
+                    <div className="text-4xl font-bold text-gray-800">
+                      {Math.floor(userToScreenTimeMapping[user] / 60)}h{" "}
+                      {userToScreenTimeMapping[user] % 60}m
                     </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl font-bold text-gray-800">
-                        {userToScreenTimeMapping[user].hours}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">hours</div>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <div className="text-4xl font-bold text-gray-800">
-                        {userToScreenTimeMapping[user].mins}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">mins</div>
-                    </div>
-                  </>
+                  </div>
                 </div>
               </div>
 
@@ -292,7 +258,7 @@ function UserSection({ user, plaqueName, API_BASE_URL }) {
             </div> */}
 
             <div className="text-xs text-gray-500 text-center mt-4">
-              A new image was generated every 30 minutes of brainrot time.
+              A new image was generated every 30 minutes of brainrot time
             </div>
           </div>
         ) : (
@@ -397,7 +363,7 @@ function FriendsPage() {
         </div>
       </main>
 
-      <footer
+      {/* <footer
         className="w-full max-w-6xl mt-12 mb-4 text-center gap-2 flex flex-col"
         style={{ color: "#ababab" }}
       >
@@ -431,7 +397,7 @@ function FriendsPage() {
           </a>
           .
         </p>
-      </footer>
+      </footer> */}
     </div>
   );
 }
